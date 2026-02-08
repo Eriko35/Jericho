@@ -84,7 +84,8 @@ function navIndex(index) {
             document.getElementById('navcontact').classList.add("active");
             break;
         default:
-            document.getElementById('loginType').style.display = 'block';
+            document.getElementById('home').style.display = 'block';
             document.getElementById('navhome').classList.add("active");
+
     }
 }

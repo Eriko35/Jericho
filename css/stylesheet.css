@@ -1,3 +1,8 @@
+#logintype,
+#loginform{
+    display: none;
+}
+
 :root {
     --base-color: #874e37;
     --nav-color: linear-gradient(to bottom, #3E3232, #2e2222);
