@@ -4,77 +4,133 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kamuseo Log In</title>
+
   <link rel="stylesheet" href="css/stylesheet.css">
   <script type="module" src="js/firebase.js"></script>
 </head>
 
 <body class="loginbg">
+
   <div class="login-container">
     <div class="login-box">
 
       <!-- LOGIN TYPE -->
-      <div class="loginindex" id="loginType">
-        <img src="css/icons/logo.png" class="logo">
+      <div id="logintype" class="loginindex">
+        <img src="css/icons/logo.png" class="logo" alt="Kamuseo Logo">
         <p class="title">Select Login Type</p>
 
-        <button class="btn-type" onclick="logInSwitch(2)">User Log In</button>
-        <button class="btn-type" onclick="logInSwitch(1)">Artist Log In</button>
+        <button class="btn-type" onclick="switchView('user')">
+          <img src="css/icons/user.png" class="btn-icon">
+          User Log In
+        </button>
+
+        <button class="btn-type" onclick="switchView('artist')">
+          <img src="css/icons/paint.png" class="btn-icon paint-icon">
+          Artist Log In
+        </button>
       </div>
 
-      <!-- USER LOGIN -->
-      <div class="loginindex" id="loginuser" style="display:none;">
-        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
-        <p>User Log In</p>
+      <!-- LOGIN FORM -->
+      <div id="loginform" class="loginindex">
+
+        <button class="btn-back" onclick="switchView('type')">← Back</button>
+
+        <img src="css/icons/icon.png" class="icon">
+        <p id="formTitle">User Log In</p>
 
         <div id="signInMessage" class="messageDiv" style="display:none"></div>
 
-        <input type="email" id="email-user" placeholder="Email" required>
-        <input type="password" id="password-user" placeholder="Password" required>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email-user" placeholder="Enter your email">
+        </div>
 
-        <button class="btn-type" id="submitSignIn" type="button">Log In</button>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password-user" placeholder="Enter your password">
+        </div>
 
-        <p class="link-text">No account?
-          <a onclick="logInSwitch(3)">Sign Up</a>
+        <button class="btn-type" id="submitSignIn" type="button">
+          Log In
+        </button>
+
+        <p class="link-text">
+          Don't have an account?
+          <a onclick="switchView('signup')">Sign Up</a>
         </p>
       </div>
 
-      <!-- ARTIST LOGIN (optional for later) -->
-      <div class="loginindex" id="loginartist" style="display:none;">
-        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
-        <p>Artist Log In</p>
-
-        <input type="email" id="email-artist" placeholder="Email">
-        <input type="password" id="password-artist" placeholder="Password">
-
-        <button class="btn-type" type="button">Log In</button>
-      </div>
-
       <!-- SIGN UP -->
-      <div class="loginindex" id="signup" style="display:none;">
-        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
-        <p>Sign Up</p>
+      <div id="signup" class="loginindex">
+
+        <button class="btn-back" onclick="switchView('type')">← Back</button>
+        <p id="formTitle">Sign Up</p>
 
         <div id="signUpMessage" class="messageDiv" style="display:none"></div>
 
-        <input type="email" id="email-sp" placeholder="Email" required>
-        <input type="text" id="fName-sp" placeholder="First Name" required>
-        <input type="text" id="lName-sp" placeholder="Last Name" required>
-        <input type="password" id="password-sp" placeholder="Password" required>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email-sp" placeholder="Enter your email">
+        </div>
 
-        <button class="btn-type" id="submitSignUp" type="button">Sign Up</button>
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="fName-sp" placeholder="First name">
+        </div>
+
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="lName-sp" placeholder="Last name">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password-sp" placeholder="Password">
+        </div>
+
+        <button class="btn-type" id="submitSignUp" type="button">
+          Sign Up
+        </button>
+
       </div>
 
     </div>
   </div>
 
   <script>
-    function logInSwitch(index) {
-      document.querySelectorAll('.loginindex').forEach(el => el.style.display = 'none');
-      if (index === 1) loginartist.style.display = 'block';
-      else if (index === 2) loginuser.style.display = 'block';
-      else if (index === 3) signup.style.display = 'block';
-      else loginType.style.display = 'block';
+    const logintype = document.getElementById("logintype");
+    const loginform = document.getElementById("loginform");
+    const signup = document.getElementById("signup");
+    const formTitle = document.getElementById("formTitle");
+
+    function hideAll() {
+      logintype.style.display = "none";
+      loginform.style.display = "none";
+      signup.style.display = "none";
     }
+
+    function switchView(view) {
+      hideAll();
+
+      if (view === "user") {
+        loginform.style.display = "block";
+        formTitle.textContent = "User Log In";
+      }
+      else if (view === "artist") {
+        loginform.style.display = "block";
+        formTitle.textContent = "Artist Log In";
+      }
+      else if (view === "signup") {
+        signup.style.display = "block";
+      }
+      else {
+        logintype.style.display = "block";
+      }
+    }
+
+    // Default view
+    switchView("type");
   </script>
+
 </body>
 </html>
