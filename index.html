@@ -1,129 +1,80 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kamuseo Log In</title>
-    <link rel="stylesheet" href="css/stylesheet.css">
-    <script type="module" src="js/firebase.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kamuseo Log In</title>
+  <link rel="stylesheet" href="css/stylesheet.css">
+  <script type="module" src="js/firebase.js"></script>
 </head>
+
 <body class="loginbg">
-    <div class="login-container">
-        <div class="login-box">
-            <!-- Login Type Selection -->
-            <div class="loginindex" id="loginType" style="display: none;">
-                <img src="css/icons/logo.png" alt="Kamuseo Logo" class="logo">
-                <p class="title">Select Login Type</p>
-                <button type="button" class="btn-type" onclick="logInSwitch(2)">
-                    <img src="css/icons/user.png" alt="User Icon" class="btn-icon">
-                    User Log In
-                </button>
-                <button type="button" class="btn-type" onclick="logInSwitch(1)">
-                    <img src="css/icons/paint.png" alt="Paint Icon" class="btn-icon paint-icon">
-                    Artist Log In
-                </button>
-            </div>
-            
-            <!-- Login Form (hidden by default) -->
-            <div class="loginindex" id="loginartist" style="display: none;">
-                <button type="button" class="btn-back" onclick="logInSwitch(0)">← Back</button>
-                <img src="css/icons/icon.png" alt="Kamuseo Icon" class="icon">
-                <p id="formTitle">Artist Log In</p>
-                <form>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                    </div>
-                    <div class="remember-me">
-                        <p class="link-text" onclick="document.getElementById('rememberme').play()"><a>Remember Me?</a></p>
-                    </div>
-                    <audio id="rememberme" src="css/audio/Remember Me.mp3"></audio>
-                    <button type="submit" class="btn-type">Log In</button>
-                    <p class="link-text"><a href="#">Forgot Password?</a></p>
-                </form>
-                <p class="link-text">Don't have an account? <a onclick="logInSwitch(3)">Sign Up</a></p>
-            </div>
+  <div class="login-container">
+    <div class="login-box">
 
-            <div class="loginindex" id="loginuser" style="display: none;">
-                <button type="button" class="btn-back" onclick="logInSwitch(0)">← Back</button>
-                <img src="css/icons/icon.png" alt="Kamuseo Icon" class="icon">
-                <p id="formTitle">User Log In</p>
-                <div id="signInMessage" class="messageDiv" style="display:none"></div>
-                <form>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                    </div>
-                    <div class="remember-me">
-                        <p class="link-text" onclick="document.getElementById('rememberme').play()"><a>Remember Me?</a></p>
-                    </div>
-                    <button type="submit" class="btn-type">Log In</button>
-                    <p class="link-text"><a href="#">Forgot Password?</a></p>
-                </form>
-                <p class="link-text">Don't have an account? <a onclick="logInSwitch(3)">Sign Up</a></p>
-            </div>
+      <!-- LOGIN TYPE -->
+      <div class="loginindex" id="loginType">
+        <img src="css/icons/logo.png" class="logo">
+        <p class="title">Select Login Type</p>
 
-            <div class="loginindex" id="signup" >
-                <button type="button" class="btn-back" onclick="logInSwitch(0)">← Back</button>
-                <p id="formTitle">Sign Up</p>
-                <div id="signUpMessage" class="messageDiv" style="display:block"></div>
-                <form>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email-sp" name="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="fName">First Name:</label>
-                        <input type="text" id="fName-sp" name="fName" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="lName">Last Name:</label>
-                        <input type="text" id="lName-sp" name="lName" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password-sp" name="password" placeholder="Enter your password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmPassword">Confirm Password:</label>
-                        <input type="password" id="confirmPassword-sp" name="confirmPassword" placeholder="Confirm your password" required>
-                    </div>
-                    <div class="form-radio">
-                        <p style="margin-bottom: 8px;">Gender</p>
-                        <input type="radio" id="male" name="gender" value="male" required>
-                        <label for="male">Male</label>
-                        <input type="radio" id="female" name="gender" value="female" required>
-                        <label for="female">Female</label>
-                    </div>
-                    <button type="submit" class="btn-type" id="submitSignUp">Sign Up</button>
-                </form>
-            </div>
-        </div>
+        <button class="btn-type" onclick="logInSwitch(2)">User Log In</button>
+        <button class="btn-type" onclick="logInSwitch(1)">Artist Log In</button>
+      </div>
+
+      <!-- USER LOGIN -->
+      <div class="loginindex" id="loginuser" style="display:none;">
+        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
+        <p>User Log In</p>
+
+        <div id="signInMessage" class="messageDiv" style="display:none"></div>
+
+        <input type="email" id="email-user" placeholder="Email" required>
+        <input type="password" id="password-user" placeholder="Password" required>
+
+        <button class="btn-type" id="submitSignIn" type="button">Log In</button>
+
+        <p class="link-text">No account?
+          <a onclick="logInSwitch(3)">Sign Up</a>
+        </p>
+      </div>
+
+      <!-- ARTIST LOGIN (optional for later) -->
+      <div class="loginindex" id="loginartist" style="display:none;">
+        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
+        <p>Artist Log In</p>
+
+        <input type="email" id="email-artist" placeholder="Email">
+        <input type="password" id="password-artist" placeholder="Password">
+
+        <button class="btn-type" type="button">Log In</button>
+      </div>
+
+      <!-- SIGN UP -->
+      <div class="loginindex" id="signup" style="display:none;">
+        <button class="btn-back" onclick="logInSwitch(0)">← Back</button>
+        <p>Sign Up</p>
+
+        <div id="signUpMessage" class="messageDiv" style="display:none"></div>
+
+        <input type="email" id="email-sp" placeholder="Email" required>
+        <input type="text" id="fName-sp" placeholder="First Name" required>
+        <input type="text" id="lName-sp" placeholder="Last Name" required>
+        <input type="password" id="password-sp" placeholder="Password" required>
+
+        <button class="btn-type" id="submitSignUp" type="button">Sign Up</button>
+      </div>
+
     </div>
-    <script>
-        function logInSwitch(index) {
-            document.querySelectorAll('.loginindex').forEach(el => el.style.display = 'none');
-            switch (index) {
-                case 1:
-                    document.getElementById('loginartist').style.display = 'block';
-                    break;
-                case 2:
-                    document.getElementById('loginuser').style.display = 'block';
-                    break;
-                case 3:
-                    document.getElementById('signup').style.display = 'block';
-                    break;
-                default:
-                    document.getElementById('loginType').style.display = 'block';
-            }
-        }
-    </script>
+  </div>
+
+  <script>
+    function logInSwitch(index) {
+      document.querySelectorAll('.loginindex').forEach(el => el.style.display = 'none');
+      if (index === 1) loginartist.style.display = 'block';
+      else if (index === 2) loginuser.style.display = 'block';
+      else if (index === 3) signup.style.display = 'block';
+      else loginType.style.display = 'block';
+    }
+  </script>
 </body>
 </html>
