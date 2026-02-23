@@ -358,6 +358,27 @@
   }
   
   /**
+   * Check if user is an artist
+   * @param {string} userId - The user's ID
+   * @returns {Promise<boolean>} - True if user is an artist
+   */
+  async function checkIsArtist(userId) {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.role === 'artist';
+      }
+      return false;
+    } catch (error) {
+      console.error('Check artist error:', error);
+      return false;
+    }
+  }
+  
+  /**
    * Check if user is an admin
    * @param {string} userId - The user's ID
    * @returns {Promise<boolean>} - True if user is an admin
