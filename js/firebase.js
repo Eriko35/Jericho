@@ -9,15 +9,15 @@
 
   // Your web app's Firebase configuration
   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyBrBpjTkPlOM7fDKHx97QYZGzGET-XWpEs",
-    authDomain: "kamuseo-651a2.firebaseapp.com",
-    projectId: "kamuseo-651a2",
-    storageBucket: "kamuseo-651a2.firebasestorage.app",
-    messagingSenderId: "281398036298",
-    appId: "1:281398036298:web:ecc0aca0d0d48b473f23b3",
-    measurementId: "G-QGJB7ERWYW"
-  };
+   const firebaseConfig = {
+  apiKey: "AIzaSyDQ_poDvhiZFPmFpPFeEnOku1cGcNxKRRM",
+  authDomain: "kamuseo-dadf9.firebaseapp.com",
+  projectId: "kamuseo-dadf9",
+  storageBucket: "kamuseo-dadf9.firebasestorage.app",
+  messagingSenderId: "604608096712",
+  appId: "1:604608096712:web:21ecc54df78b2844b0f8fd",
+  measurementId: "G-ELWE92RRGY"
+};
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
