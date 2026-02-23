@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamuseo Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/home.css">
+    <style>
+        body { overflow-y: auto; }
+        .admin-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .admin-section { background: var(--base-light); padding: 20px; margin-bottom: 20px; border-radius: 10px; color: var(--baselt); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        .btn-danger { background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        .btn-danger:hover { background-color: #cc0000; }
+        .upload-form { display: flex; flex-direction: column; gap: 10px; max-width: 500px; }
+        input, select, textarea { padding: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navdiv">
+            <div><p>KAMUSEO ADMIN</p></div>
+            <div><a href="home2.html" style="color: var(--navt-col); text-decoration: none;">Back to Home</a></div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        
+        <!-- User Management -->
+        <div class="admin-section">
+            <h2>User Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- Users loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Art Upload -->
+        <div class="admin-section">
+            <h2>Upload Museum Artwork</h2>
+            <div class="upload-form">
+                <label>Select Museum</label>
+                <select id="museumType">
+                    <option value="nationalMuseum">National Museum</option>
+                    <option value="localMuseum">Local Museum</option>
+                </select>
+
+                <label>Artwork Title</label>
+                <input type="text" id="artTitle" placeholder="Title">
+
+                <label>Artist Name</label>
+                <input type="text" id="artistName" placeholder="Artist">
+
+                <label>Description</label>
+                <textarea id="artDesc" placeholder="Description"></textarea>
+
+                <input type="file" id="artFile" accept="image/*">
+                <button onclick="uploadMuseumArt()">Upload Artwork</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

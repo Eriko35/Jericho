@@ -3,6 +3,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kamuseo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css">
 </head>
 <body>
@@ -20,7 +23,7 @@
                 <div class="home-section">
                     <p class="bigTitle"><span id="contestTitle">Current Contest</span></p>
                     <p id="subdeadline">Submission Deadline: <span id="deadlineDate"> 01/01/26 </span> </p>
-                    <button id="joinContest">
+                    <button id="joinContest" onclick="navIndex(98)">
                     Join Contest
                     </button>
                 </div>
@@ -213,7 +216,7 @@
             <div class="homeindex" id="artContestSubmit">
                 <form id="art-contest-submit">
                     <div class="filedrop">
-                        <label class="dropFileArea"> Upload Photo Here.
+                        <label class="dropFileArea"> Upload Photo Here
                             <input type="file" accept="image/*" id="submContest" hidden>
                             <img id="uploadPreview" style="display:none;">
                         </label>
@@ -221,9 +224,29 @@
                     <div class="editdesc">
                         <input type="text" placeholder="Art Title" id="contestSubmitTitle">
                         <textarea type="text" placeholder="Art Description" id="contestSubmitDesc"></textarea>
-                        <button>Submit</button>
+                        <button onclick="uploadImage()">Submit</button>
                     </div>
                 </form>
+            </div>
+            <div class="homeindex" id="profilef" style="display:none;">
+                <div class="profile-header">
+                    <div class="profile-pic-large">
+                        <img src="css/image/Juanluna.jpg" id="profilePageImg">
+                    </div>
+                    <div class="profile-info-edit">
+                        <label>Username</label>
+                        <input type="text" id="editUsername" placeholder="Username">
+                        <label>Birthday</label>
+                        <input type="date" id="editBirthday">
+                        <label>Description</label>
+                        <textarea id="editDescription" placeholder="Tell us about yourself..."></textarea>
+                        <button onclick="saveProfile()">Save Changes</button>
+                    </div>
+                </div>
+                <p class="bodyTitle">My Uploaded Artworks</p>
+                <div class="featured-artworks" id="myArtworksGallery">
+                    <!-- Artworks will be loaded here -->
+                </div>
             </div>
             <footer>
                 <p>Group 1: Boomtarat<br>
@@ -236,7 +259,7 @@
         <div class="sidebar" id="sideBar">
             <div id="smenu">
                 <ul>
-                    <li class="usr-pfp"><div class="userprofile"><img src="css/image/Juanluna.jpg"></div></li>
+                    <li class="usr-pfp"><div class="userprofile" onclick="navIndex(5)" style="cursor: pointer;"><img src="css/image/Juanluna.jpg" id="sidebarPfp"></div></li>
                     <li><a class="navindex" onclick="navIndex(1)" id="nav1">Home</a></li>
                     <li><a class="navindex" onclick="navIndex(2)" id="nav2">About Us</a></li>
                     <li><a class="navindex" onclick="navIndex(3)" id="nav3" >Auction</a></li>
@@ -252,6 +275,7 @@
                     <li>
                         <button onclick="changeTheme()">Select</button></li>
                     <li><a class="navindex" style="margin-top: 15px;" id="nav4" onclick="logOut()">Log Out</a></li>
+                    <li><a class="navindex" style="margin-top: 5px; font-size: 14px; color: var(--active);" href="admin.html">Admin Panel</a></li>
                 </ul>
             </div>
             <div id="saccount">
@@ -259,6 +283,6 @@
             </div>
         </div>
     </main>
-    <script src="js/home2.js"></script>
+    <script type="module" src="js/home2.js"></script>
 </body>
 </html>
