@@ -1,0 +1,216 @@
+rules_version = '2';
+
+// =============================================================================
+// FIRESTORE DATABASE RULES
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Get user role from user profile
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Check if user is an artist
+    function isArtist() {
+      return getUserRole() == 'artist';
+    }
+    
+    // Check if user is an admin
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+    
+    // Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is artist or admin
+    function isArtistOrAdmin() {
+      return isArtist() || isAdmin();
+    }
+    
+    // ============================================
+    // USER PROFILES COLLECTION
+    // ============================================
+    match /users/{userId} {
+      // Anyone can read user profiles (for displaying artist info)
+      allow read: if true;
+      
+      // Users can only create their own profile
+      allow create: if isAuthenticated() 
+                    && request.resource.id == request.auth.uid;
+      
+      // Users can update their own profile
+      // Admins can update any profile
+      allow update: if isAuthenticated() 
+                    && (isOwner(userId) || isAdmin());
+      
+      // Only admins can delete users
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // ============================================
+    // ARTWORKS COLLECTION
+    // ============================================
+    match /artworks/{artworkId} {
+      // Anyone can read public artworks
+      allow read: if request.resource.data.isPublic == true 
+                   || (isAuthenticated() && (isOwner(request.resource.data.artistId) || isAdmin()));
+      
+      // Artists and Admins can create artworks
+      allow create: if isAuthenticated() && isArtistOrAdmin();
+      
+      // Only the artwork owner or admin can update
+      allow update: if isAuthenticated() 
+                    && (isOwner(request.resource.data.artistId) || isAdmin());
+      
+      // Only the artwork owner or admin can delete
+      allow delete: if isAuthenticated() 
+                    && (isOwner(resource.data.artistId) || isAdmin());
+    }
+    
+    // ============================================
+    // COMMENTS COLLECTION
+    // ============================================
+    match /comments/{commentId} {
+      // Anyone can read comments
+      allow read: if true;
+      
+      // Authenticated users can create comments
+      allow create: if isAuthenticated();
+      
+      // Comment owner or admin can update
+      allow update: if isAuthenticated() 
+                    && (isOwner(resource.data.userId) || isAdmin());
+      
+      // Comment owner or admin can delete
+      allow delete: if isAuthenticated() 
+                    && (isOwner(resource.data.userId) || isAdmin());
+    }
+    
+    // ============================================
+    // REPORTS COLLECTION
+    // ============================================
+    match /reports/{reportId} {
+      // Admins can read all reports
+      allow read: if isAuthenticated() && isAdmin();
+      
+      // Any authenticated user can create a report
+      allow create: if isAuthenticated();
+      
+      // Only admins can update reports
+      allow update: if isAuthenticated() && isAdmin();
+      
+      // Only admins can delete reports
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+  }
+}
+
+// =============================================================================
+// FIREBASE STORAGE RULES
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check user role from Firestore
+    function getUserRole() {
+      return firestore.get(/databases/$(bucket)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Check if user is an artist
+    function isArtist() {
+      return getUserRole() == 'artist';
+    }
+    
+    // Check if user is an admin
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+    
+    // Check if user can upload (artist or admin)
+    function canUpload() {
+      return isAuthenticated() && (isArtist() || isAdmin());
+    }
+    
+    // Check if user owns the folder
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ============================================
+    // ARTWORK IMAGES
+    // ============================================
+    match /artworks/{artistId}/{fileName} {
+      // Anyone can read public artwork images
+      allow read: if true;
+      
+      // Only artists and admins can upload artwork images
+      // Users can only upload to their own folder
+      allow create: if canUpload() 
+                    && request.auth.uid == artistId
+                    // Validate file type (images only)
+                    && request.resource.contentType.matches('image/.*')
+                    // Validate file size (max 10MB)
+                    && request.resource.size <= 10 * 1024 * 1024;
+      
+      // Only the owner or admin can delete
+      allow delete: if isAuthenticated() 
+                    && (request.auth.uid == artistId || isAdmin());
+    }
+    
+    // ============================================
+    // USER AVATARS
+    // ============================================
+    match /avatars/{userId}/{fileName} {
+      // Anyone can read avatars
+      allow read: if true;
+      
+      // Users can only upload to their own avatar folder
+      allow create: if isAuthenticated() 
+                    && request.auth.uid == userId
+                    && request.resource.contentType.matches('image/.*')
+                    && request.resource.size <= 5 * 1024 * 1024; // 5MB max
+      
+      // Users can only delete their own avatar
+      allow delete: if isAuthenticated() 
+                    && request.auth.uid == userId;
+    }
+    
+    // ============================================
+    // PROFILE BANNERS
+    // ============================================
+    match /banners/{userId}/{fileName} {
+      // Anyone can read banners
+      allow read: if true;
+      
+      // Users can only upload to their own banner folder
+      allow create: if isAuthenticated() 
+                    && request.auth.uid == userId
+                    && request.resource.contentType.matches('image/.*')
+                    && request.resource.size <= 5 * 1024 * 1024;
+      
+      // Users can only delete their own banner
+      allow delete: if isAuthenticated() 
+                    && request.auth.uid == userId;
+    }
+  }
+}
