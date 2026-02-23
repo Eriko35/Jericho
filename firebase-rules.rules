@@ -1,3 +1,10 @@
+// =============================================================================
+// UNIFIED FIREBASE SECURITY RULES FOR KAMUSEO
+// =============================================================================
+// This file contains Firestore database rules only (Storage is handled by Supabase)
+// Deploy: firebase deploy --only firestore:rules
+// =============================================================================
+
 rules_version = '2';
 
 // =============================================================================
@@ -120,97 +127,26 @@ service cloud.firestore {
 }
 
 // =============================================================================
-// FIREBASE STORAGE RULES
+// ROLE PERMISSIONS SUMMARY
 // =============================================================================
+/*
+FIRESTORE (Database):
 
-service firebase.storage {
-  match /b/{bucket}/o {
-    
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Check user role from Firestore
-    function getUserRole() {
-      return firestore.get(/databases/$(bucket)/documents/users/$(request.auth.uid)).data.role;
-    }
-    
-    // Check if user is an artist
-    function isArtist() {
-      return getUserRole() == 'artist';
-    }
-    
-    // Check if user is an admin
-    function isAdmin() {
-      return getUserRole() == 'admin';
-    }
-    
-    // Check if user can upload (artist or admin)
-    function canUpload() {
-      return isAuthenticated() && (isArtist() || isAdmin());
-    }
-    
-    // Check if user owns the folder
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // ============================================
-    // ARTWORK IMAGES
-    // ============================================
-    match /artworks/{artistId}/{fileName} {
-      // Anyone can read public artwork images
-      allow read: if true;
-      
-      // Only artists and admins can upload artwork images
-      // Users can only upload to their own folder
-      allow create: if canUpload() 
-                    && request.auth.uid == artistId
-                    // Validate file type (images only)
-                    && request.resource.contentType.matches('image/.*')
-                    // Validate file size (max 10MB)
-                    && request.resource.size <= 10 * 1024 * 1024;
-      
-      // Only the owner or admin can delete
-      allow delete: if isAuthenticated() 
-                    && (request.auth.uid == artistId || isAdmin());
-    }
-    
-    // ============================================
-    // USER AVATARS
-    // ============================================
-    match /avatars/{userId}/{fileName} {
-      // Anyone can read avatars
-      allow read: if true;
-      
-      // Users can only upload to their own avatar folder
-      allow create: if isAuthenticated() 
-                    && request.auth.uid == userId
-                    && request.resource.contentType.matches('image/.*')
-                    && request.resource.size <= 5 * 1024 * 1024; // 5MB max
-      
-      // Users can only delete their own avatar
-      allow delete: if isAuthenticated() 
-                    && request.auth.uid == userId;
-    }
-    
-    // ============================================
-    // PROFILE BANNERS
-    // ============================================
-    match /banners/{userId}/{fileName} {
-      // Anyone can read banners
-      allow read: if true;
-      
-      // Users can only upload to their own banner folder
-      allow create: if isAuthenticated() 
-                    && request.auth.uid == userId
-                    && request.resource.contentType.matches('image/.*')
-                    && request.resource.size <= 5 * 1024 * 1024;
-      
-      // Users can only delete their own banner
-      allow delete: if isAuthenticated() 
-                    && request.auth.uid == userId;
-    }
-  }
-}
+| Action              | Admin | Artist | Guest |
+|--------------------|-------|--------|-------|
+| View Public Art    |   ✓   |   ✓    |   ✓   |
+| View All Art       |   ✓   |   ✓    |   ✗   |
+| Create Artwork     |   ✓   |   ✓    |   ✗   |
+| Update Own Art     |   ✓   |   ✓    |   ✗   |
+| Delete Own Art     |   ✓   |   ✓    |   ✗   |
+| Update Any Art     |   ✓   |   ✗    |   ✗   |
+| Delete Any Art     |   ✓   |   ✗    |   ✗   |
+| View Profiles      |   ✓   |   ✓    |   ✓   |
+| Edit Own Profile  |   ✓   |   ✓    |   ✓   |
+| Edit Any Profile  |   ✓   |   ✗    |   ✗   |
+| Delete Users      |   ✓   |   ✗    |   ✗   |
+| Manage Reports    |   ✓   |   ✗    |   ✗   |
+
+NOTE: File storage is now handled by Supabase, not Firebase Storage.
+
+*/
