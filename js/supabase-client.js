@@ -9,8 +9,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // Replace these with your actual Supabase credentials
 // You can get these from your Supabase project dashboard
-const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL'; // e.g., 'https://your-project.supabase.co'
-const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY'; // e.g., 'eyJhbGciOiJIUzI1NiIs...'
+const supabaseUrl = 'https://qdalybrlsjlqnfgnpzdu.supabase.co'; // e.g., 'https://your-project.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkYWx5YnJsc2pscW5mZ25wemR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI4MDksImV4cCI6MjA4NzQwODgwOX0.QW-Zem0LORZUpyjMw4MPfEsoZ7qHU6kN6nMtVVKDu0w'; // e.g., 'eyJhbGciOiJIUzI1NiIs...'
 
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
