@@ -16,10 +16,10 @@
     </nav>
     <main class="main">
         <div class="maindiv">
-            <div class="homeindex" id="homef">
+            <div class="homeindex" id="homef" style="display:none;">
                 <div class="home-section">
-                    <p id="curContest">Current Contest</p>
-                    <p id="subdeadline">Submission Deadline: <p id="deadlineDate"> 01/01/26 </p> </p>
+                    <p class="bigTitle"><span id="contestTitle">Current Contest</span></p>
+                    <p id="subdeadline">Submission Deadline: <span id="deadlineDate"> 01/01/26 </span> </p>
                     <button id="joinContest">
                     Join Contest
                     </button>
@@ -68,41 +68,71 @@
                     </a>
                 </div>
             </div>
-            <div class="homeindex" id="auctionf" style="display:none;">
-                <div class="fullAucCt" id="fullAucBox" style="display:none;">
-                    <div class="full-auc">
-                        <div class="aucbody">
-                            <div class="imgauc">
-                                <img id="fullAucImg" src="css/image/Tampuhan.jpg">
+            <div class="homeindex" id="fullAucBox" style="display:none;">
+                <div class="full-auc">
+                        <div class="imgauc">
+                            <img id="artImg" src="css/image/Tampuhan.jpg">
+                        </div>
+                        <div class="descauc">
+                            <p id="artTitle">TITLE</p>
+                            <div class="aucdescarea">
+                                <p id="artDate">
+
+                                </p>
+                                    <p id="artDesc">Ang bango-bango ng bulaklak
+                        'Pag inaamoy 'pag inaamoy
+                        'Pag inaamoy anong sarap
+                        Ang bango-bango ang sarap-sarap
+                        Amuyin ang bulaklak
+                        Ang laki-laki ang laki-laki
+                        Ang laki-laki ng bulaklak
+                        Ang pula-pula ang pula-pula
+                        Ang pula-pula ng bulaklak
+                        Ang laki-laki ang pula-pula
+                        Ng kulay ng bulaklak
+                        Bubuka ang bulaklak papasok ang reyna
+                        Sasayaw ng cha-cha ang saya-saya
+                        Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye
+                        Boom-ti-ya-ya boom-ti-ya-ya bango-bango ng bulaklak
+                        'Pag inaamoy 'pag inaamoy
+                        'Pag inaamoy anong sarap
+                        Ang bango-bango ang sarap-sarap
+                        Amuyin ang bulaklak
+                        Ang laki-laki ang laki-laki
+                        Ang laki-laki ng bulaklak
+                        Ang pula-pula ang pula-pula
+                        Ang pula-pula ng bulaklak
+                        Ang laki-laki ang pula-pula
+                        Ng kulay ng bulaklak
+                        Bubuka ang bulaklak papasok ang reyna
+                        Sasayaw ng cha-cha ang saya-saya
+                        Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye
+                        Boom-ti-ya-ya boom-ti-ya-ya bango-bango ng bulaklak
+                        'Pag inaamoy 'pag inaamoy
+                        'Pag inaamoy anong sarap
+                        Ang bango-bango ang sarap-sarap
+                        Amuyin ang bulaklak
+                        Ang laki-laki ang laki-laki
+                        Ang laki-laki ng bulaklak
+                        Ang pula-pula ang pula-pula
+                        Ang pula-pula ng bulaklak
+                        Ang laki-laki ang pula-pula
+                        Ng kulay ng bulaklak
+                        Bubuka ang bulaklak papasok ang reyna
+                        Sasayaw ng cha-cha ang saya-saya
+                        Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye
+                        Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye</p>
                             </div>
-                            <div class="descauc">
-                                <p id="auctitle">TITLE</p>
-                                <p id="aucartdesc">Ang bango-bango ng bulaklak
-                            'Pag inaamoy 'pag inaamoy
-                            'Pag inaamoy anong sarap
-                            Ang bango-bango ang sarap-sarap
-                            Amuyin ang bulaklak
-                            Ang laki-laki ang laki-laki
-                            Ang laki-laki ng bulaklak
-                            Ang pula-pula ang pula-pula
-                            Ang pula-pula ng bulaklak
-                            Ang laki-laki ang pula-pula
-                            Ng kulay ng bulaklak
-                            Bubuka ang bulaklak papasok ang reyna
-                            Sasayaw ng cha-cha ang saya-saya
-                            Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye
-                            Boom-ti-ya-ya boom-ti-ya-ya boom-ye-ye</p>
-                            </div>
-                            <div class="biddingArea">
+                            
+                            <div class="biddingarea">
                                 <p>Current Bid:<p>$999,999,999</p></p>
                                 <input id="offerbid" type="number"><button>Offer Bid</button>
                             </div>
                         </div>
-                            
-                        <span onclick="closeFullAuc()">X</span>
-                    </div>
+                        <span onclick="navIndex(3)">X</span>
                 </div>
-                
+            </div>
+            <div class="homeindex" id="auctionf" style="display:none;">  
                 <input type="text" placeholder="Search" class="searchbar">
                 <div class="aucCont">
                     <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
@@ -125,7 +155,7 @@
                     <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
                 </div>
             </div>
-            <div class="homeindex" id="artistf" style="display:none;">
+            <div class="homeindex" id="artistf" >
 
             </div>
             <div class="homeindex" id="aboutusf" style="display:none;">
@@ -136,8 +166,8 @@
                     
                     <div>
                         <h1>About us</h1>
-                        <p> KaMuseo was created by students with the goal of expressing art through a digital platform. It serves as a space where creativity can be shared and experienced. 
-                        Built with creativity and passion, KaMuseo reflects how art can evolve into technology while valuing the expression and culture of arts.
+                                            <p> KaMuseo was created by students with the goal of expressing art through a digital platform. It serves as a space where creativity can be shared and experienced. 
+                        Built with creativity and passion, KaMuseo reflects how art can evolve into technology while vastyleluing the expression and culture of arts.
                     </div>
                 </div>
         <!-- Mission: KaMuseo aims to be a space wherein artists can freely show their art pieces while keeping the feeling of nostalgia and vibes of a real museum. 
@@ -155,6 +185,45 @@
                     </div>
                     
                 </div>
+            </div>
+            <div class="homeindex" id="constestf" style="display:none;">
+                <p class="bigTitle"><span id="contestTitle">CONTEST TITLE</span></p>
+                <hr>
+                <div class="aucCont">
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Tampuhan.jpg"><div class="aucTitle"><p id="auc-title">dsdddddddddcccccccdddddddddddddddddd</p><p id="auc-price">$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/Spoliarium.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                    <div class="aucart"><img src="css/image/portraitlady.jpg"><div><p class="aucTitle"><p>sample image only</p></p><p>$999,999,999</p></div></div>
+                </div>
+            </div>
+            <div class="homeindex" id="artContestSubmit">
+                <form id="art-contest-submit">
+                    <div class="filedrop">
+                        <label class="dropFileArea"> Upload Photo Here.
+                            <input type="file" accept="image/*" id="submContest" hidden>
+                            <img id="uploadPreview" style="display:none;">
+                        </label>
+                    </div>
+                    <div class="editdesc">
+                        <input type="text" placeholder="Art Title" id="contestSubmitTitle">
+                        <textarea type="text" placeholder="Art Description" id="contestSubmitDesc"></textarea>
+                        <button>Submit</button>
+                    </div>
+                </form>
             </div>
             <footer>
                 <p>Group 1: Boomtarat<br>
@@ -182,7 +251,7 @@
                     </li>
                     <li>
                         <button onclick="changeTheme()">Select</button></li>
-                    <li><a class="navindex" style="margin-top: 15px;" id="nav4">Log Out</a></li>
+                    <li><a class="navindex" style="margin-top: 15px;" id="nav4" onclick="logOut()">Log Out</a></li>
                 </ul>
             </div>
             <div id="saccount">
