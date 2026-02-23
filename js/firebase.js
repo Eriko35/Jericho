@@ -3,8 +3,9 @@
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
   import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
   import {getFirestore, setDoc, doc, getDoc, collection, addDoc, query, where, getDocs, orderBy, deleteDoc} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-  // Firebase Storage import for image uploads
-  import {getStorage, ref, uploadBytes, getDownloadURL, deleteObject} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-storage.js";
+  
+  // Supabase Storage import
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -33,19 +34,20 @@
   // Initialize Auth
   const auth = getAuth(app);
   //const analytics = getAnalytics(app);
-
+  
   // ============================================
-  // STORAGE CONFIGURATION
+  // SUPABASE STORAGE CONFIGURATION (replacing Firebase Storage)
   // ============================================
   
-  // Allowed file types for image uploads
-  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  // Supabase configuration
+  const supabaseUrl = 'https://qdalybrlsjlqnfgnpzdu.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkYWx5YnJsc2pscW5mZ25wemR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI4MDksImV4cCI6MjA4NzQwODgwOX0.QW-Zem0LORZUpyjMw4MPfEsoZ7qHU6kN6nMtVVKDu0w';
   
-  // Maximum file size (10MB)
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  // Create Supabase client
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
   
-  // Storage bucket reference
-  const artworkStorageRef = ref(storage, 'artworks/');
+  // Storage bucket reference (single bucket)
+  const ARTWORK_BUCKET = 'storage';
   
   // ============================================
   // VALIDATION FUNCTIONS
@@ -96,7 +98,7 @@
   // ============================================
   
   /**
-   * Upload artwork image to Firebase Storage
+   * Upload artwork image to Supabase Storage
    * @param {File} file - The image file to upload
    * @param {string} userId - The artist's user ID
    * @returns {Promise<Object>} - Result with download URL or error
@@ -111,20 +113,28 @@
       
       // Generate unique file path
       const filePath = generateArtworkPath(userId, file.name);
-      const storageRef = ref(storage, filePath);
       
-      // Upload file with metadata
-      const snapshot = await uploadBytes(storageRef, file, {
-        contentType: file.type,
-        cacheControl: 'public, max-age=3600'
-      });
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('storage')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
       
-      // Get download URL
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      if (error) {
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('storage')
+        .getPublicUrl(filePath);
       
       return {
         success: true,
-        url: downloadURL,
+        url: urlData.publicUrl,
         path: filePath,
         fileName: file.name,
         fileSize: file.size,
@@ -141,14 +151,20 @@
   }
   
   /**
-   * Delete artwork image from Firebase Storage
+   * Delete artwork image from Supabase Storage
    * @param {string} filePath - The path of the file to delete
    * @returns {Promise<Object>} - Result with success or error
    */
   async function deleteArtworkImage(filePath) {
     try {
-      const storageRef = ref(storage, filePath);
-      await deleteObject(storageRef);
+      const { data, error } = await supabase.storage
+        .from('storage')
+        .remove([filePath]);
+      
+      if (error) {
+        throw error;
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('Delete error:', error);
