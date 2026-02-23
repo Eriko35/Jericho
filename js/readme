@@ -1,30 +1,40 @@
-CREATE POLICY "Public can view all files"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'storage');
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    username TEXT UNIQUE NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    role TEXT NOT NULL DEFAULT 'guest' CHECK (role IN ('admin', 'artist', 'guest')),
+    category TEXT,
+    bio TEXT,
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 2. AUTHENTICATED USERS CAN UPLOAD
--- Any authenticated user can upload files to their own folder
-CREATE POLICY "Authenticated users can upload files"
-    ON storage.objects FOR INSERT
-    WITH CHECK (
-        bucket_id = 'storage'
-        AND auth.uid() IS NOT NULL
-    );
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
--- 3. FILE OWNERS CAN DELETE THEIR OWN FILES
--- Users can delete files they uploaded
-CREATE POLICY "Users can delete own files"
-    ON storage.objects FOR DELETE
+-- Anyone can read user profiles
+CREATE POLICY "Anyone can view user profiles"
+    ON public.user_profiles FOR SELECT
+    USING (true);
+
+-- Users can create their own profile
+CREATE POLICY "Users can create own profile"
+    ON public.user_profiles FOR INSERT
+    WITH CHECK (auth.uid() = id);
+
+-- Users can update own profile, admins can update any
+CREATE POLICY "Users can update own profile"
+    ON public.user_profiles FOR UPDATE
+    USING (auth.uid() = id);
+
+-- Admins can delete profiles
+CREATE POLICY "Admins can delete profiles"
+    ON public.user_profiles FOR DELETE
     USING (
-        bucket_id = 'storage'
-        AND auth.uid()::TEXT = (storage.foldername(name))[1]
-    );
-
--- 4. FILE OWNERS CAN UPDATE THEIR OWN FILES
--- Users can update files they uploaded
-CREATE POLICY "Users can update own files"
-    ON storage.objects FOR UPDATE
-    USING (
-        bucket_id = 'storage'
-        AND auth.uid()::TEXT = (storage.foldername(name))[1]
+        EXISTS (
+            SELECT 1 FROM public.user_profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
     );
