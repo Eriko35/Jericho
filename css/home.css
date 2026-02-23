@@ -1,51 +1,54 @@
 :root {
-    --base-color: #874e37;
-    --nav-color: linear-gradient(to bottom, #3E3232, #2e2222);
-    --text-opposite-color: #FFFFFF;
-    --text-color: #ffffff;
-    --navt-col: #ffffff;
-    --base-light: #a06b56;
-    --active: #925d48;
+    --base-color: #383838; /* Dark gray for main content */
+    --nav-color: linear-gradient(to bottom, #2a2a2a, #1f1f1f); /* Even darker nav */
+    --text-opposite-color: #000000;
+    --text-color: #f0f0f0; /* Off-white text */
+    --navt-col: #f0f0f0;
+    --base-light: #4a4a4a; /* Lighter gray for sidebar/etc */
+    --active: #c5a575; /* Gold/amber accent */
+    --baselt: #f0f0f0;
 }
 p{
     margin: 2px;
     padding: 0;
 }
 .light-theme {
-    --base-color: hsl(17, 67%, 92%);
-    --base-light: #fcf7ee;
+    --base-color: #fdfaf5; /* Warm off-white */
+    --base-light: #f5efe6; /* Slightly darker for sidebar */
     --text-opposite-color: #000000;
-    --nav-color: linear-gradient(to bottom, #fcab48, #da9c51);
-    --navt-col: #000000;
-    --text-color: #000000;
-    --active: #e7dece;
+    --nav-color: linear-gradient(to bottom, #8d6e63, #795548); /* Earthy brown nav */
+    --navt-col: #ffffff;
+    --text-color: #3e2723; /* Dark brown text */
+    --active: #a1887f; /* Muted accent */
+    --baselt: #3e2723;
 }
 
 .pink-theme {
-    --base-color: #ce488b;
-    --base-light: #FF8FB7;
-    --baselt: black;
+    --base-color: #f8e0e0; /* Soft pink background */
+    --base-light: #f4d0d0; /* Slightly darker pink for sidebar */
+    --baselt: #5d4037; /* Brownish text for contrast */
     --text-opposite-color: #000000;
-    --nav-color: linear-gradient(to bottom, #43334C, #3d2c47);
+    --nav-color: linear-gradient(to bottom, #c48a8a, #ab6c6c); /* Muted red-pink nav */
     --navt-col: #ffffff;
-    --text-color: #ffffff;
-    --active: #ee7ba3;
+    --text-color: #5d4037; /* Dark text for readability */
+    --active: #e5baba; /* Active state color */
 }
 .ocean-theme {
-    --base-color: #53629E;
-    --base-light: #87BAC3;
-    --baselt:black;
+    --base-color: #e0f7fa; /* Very light cyan */
+    --base-light: #b2ebf2; /* Light cyan for sidebar */
+    --baselt: #004d40; /* Dark teal text */
     --text-opposite-color: #000000;
-    --nav-color: linear-gradient(to bottom, #473472, #402a72);
+    --nav-color: linear-gradient(to bottom, #00796b, #004d40); /* Teal gradient nav */
     --navt-col: #ffffff;
-    --text-color: #ffffff;
-    --active: #70a9b3;
+    --text-color: #004d40; /* Dark teal text */
+    --active: #80deea; /* Active state color */
 }
 
 * {
     box-sizing: border-box;
 }
 body {
+    font-family: 'Montserrat', sans-serif;
     color: var(--text-color);
 /* NAVIGATION BAR*/
     margin: 0;
@@ -604,4 +607,54 @@ footer {
     padding: 2%;
     font-size: 25px;
     background-color: var(--base-light);
+}
+.dropFileArea.drag-over {
+    background-color: var(--base-light);
+    border-style: solid;
+}
+
+/* --- Profile Section --- */
+.profile-header {
+    display: flex;
+    flex-direction: row;
+    padding: 40px;
+    background-color: var(--base-light);
+    margin: 20px;
+    border-radius: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.profile-pic-large {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--baselt);
+    margin-right: 40px;
+}
+.profile-pic-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.profile-info-edit {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.profile-info-edit input, .profile-info-edit textarea {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-family: 'Montserrat', sans-serif;
+}
+.profile-info-edit button {
+    background-color: var(--active);
+    color: var(--baselt);
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
 }
