@@ -12,11 +12,11 @@
 
   // Your web app's Firebase configuration
   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  // Note: Auth & Firestore are used - file storage is handled by Supabase
   const firebaseConfig = {
   apiKey: "AIzaSyDQ_poDvhiZFPmFpPFeEnOku1cGcNxKRRM",
   authDomain: "kamuseo-dadf9.firebaseapp.com",
   projectId: "kamuseo-dadf9",
-  storageBucket: "kamuseo-dadf9.firebasestorage.app",
   messagingSenderId: "604608096712",
   appId: "1:604608096712:web:21ecc54df78b2844b0f8fd",
   measurementId: "G-ELWE92RRGY"
