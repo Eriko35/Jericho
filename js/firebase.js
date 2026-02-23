@@ -502,7 +502,7 @@
    */
   async function uploadAndSaveArtwork(file, userId, metadata) {
     try {
-      // Step 1: Upload image to Firebase Storage
+      // Step 1: Upload image to Supabase Storage
       const uploadResult = await uploadArtworkImage(file, userId);
       
       if (!uploadResult.success) {
