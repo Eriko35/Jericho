@@ -1,40 +1,19 @@
-CREATE TABLE IF NOT EXISTS public.user_profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    username TEXT UNIQUE NOT NULL,
-    first_name TEXT,
-    last_name TEXT,
-    role TEXT NOT NULL DEFAULT 'guest' CHECK (role IN ('admin', 'artist', 'guest')),
-    category TEXT,
-    bio TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
-
--- Anyone can read user profiles
-CREATE POLICY "Anyone can view user profiles"
-    ON public.user_profiles FOR SELECT
-    USING (true);
-
--- Users can create their own profile
-CREATE POLICY "Users can create own profile"
-    ON public.user_profiles FOR INSERT
-    WITH CHECK (auth.uid() = id);
-
--- Users can update own profile, admins can update any
-CREATE POLICY "Users can update own profile"
-    ON public.user_profiles FOR UPDATE
-    USING (auth.uid() = id);
-
--- Admins can delete profiles
-CREATE POLICY "Admins can delete profiles"
-    ON public.user_profiles FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.user_profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.user_profiles (id, email, username, role, category)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || LEFT(NEW.id::TEXT, 8)),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'guest'),
+        NEW.raw_user_meta_data->>'category'
     );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
