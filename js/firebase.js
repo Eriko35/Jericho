@@ -25,9 +25,6 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   
-  // Initialize Firebase Storage
-  const storage = getStorage(app);
-  
   // Initialize Firestore
   const db = getFirestore(app);
   
