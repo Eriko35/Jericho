@@ -2,7 +2,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
   import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-  import {getFirestore, setDoc, doc, getDoc, collection, addDoc, query, where, getDocs, orderBy} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import {getFirestore, setDoc, doc, getDoc, collection, addDoc, query, where, getDocs, orderBy, deleteDoc} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
   // Firebase Storage import for image uploads
   import {getStorage, ref, uploadBytes, getDownloadURL, deleteObject} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-storage.js";
 
@@ -255,25 +255,209 @@
   }
   
   /**
-   * Check if user is an artist
-   * @param {string} userId - The user's ID
-   * @returns {Promise<boolean>} - True if user is an artist
+   * Update artwork in Firestore
+   * @param {string} artworkId - The artwork document ID
+   * @param {Object} artworkData - Updated artwork data
+   * @param {string} userId - The current user's ID (for permission check)
+   * @returns {Promise<Object>} - Result with updated artwork or error
    */
-  async function checkIsArtist(userId) {
+  async function updateArtwork(artworkId, artworkData, userId) {
+    try {
+      // First check if user owns this artwork
+      const artworkDocRef = doc(db, 'artworks', artworkId);
+      const artworkDoc = await getDoc(artworkDocRef);
+      
+      if (!artworkDoc.exists()) {
+        return { success: false, error: 'Artwork not found' };
+      }
+      
+      const artwork = artworkDoc.data();
+      
+      // Check if user is the owner or an admin
+      const isOwner = artwork.artistId === userId;
+      const isAdmin = await checkIsAdmin(userId);
+      
+      if (!isOwner && !isAdmin) {
+        return { success: false, error: 'You do not have permission to update this artwork' };
+      }
+      
+      // Update the artwork
+      const updateData = {
+        title: artworkData.title || artwork.title,
+        description: artworkData.description !== undefined ? artworkData.description : artwork.description,
+        tags: artworkData.tags || artwork.tags || [],
+        isPublic: artworkData.isPublic !== undefined ? artworkData.isPublic : artwork.isPublic,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await setDoc(artworkDocRef, updateData, { merge: true });
+      
+      return {
+        success: true,
+        id: artworkId,
+        data: updateData
+      };
+    } catch (error) {
+      console.error('Update artwork error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  /**
+   * Delete artwork from Firestore
+   * @param {string} artworkId - The artwork document ID
+   * @param {string} userId - The current user's ID (for permission check)
+   * @returns {Promise<Object>} - Result with success or error
+   */
+  async function deleteArtwork(artworkId, userId) {
+    try {
+      // First check if user owns this artwork
+      const artworkDocRef = doc(db, 'artworks', artworkId);
+      const artworkDoc = await getDoc(artworkDocRef);
+      
+      if (!artworkDoc.exists()) {
+        return { success: false, error: 'Artwork not found' };
+      }
+      
+      const artwork = artworkDoc.data();
+      
+      // Check if user is the owner or an admin
+      const isOwner = artwork.artistId === userId;
+      const isAdmin = await checkIsAdmin(userId);
+      
+      if (!isOwner && !isAdmin) {
+        return { success: false, error: 'You do not have permission to delete this artwork' };
+      }
+      
+      // Delete from Firestore
+      await deleteDoc(artworkDocRef);
+      
+      // Also delete the image from storage if exists
+      if (artwork.imagePath) {
+        await deleteArtworkImage(artwork.imagePath);
+      }
+      
+      return { success: true, message: 'Artwork deleted successfully' };
+    } catch (error) {
+      console.error('Delete artwork error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  /**
+   * Check if user is an admin
+   * @param {string} userId - The user's ID
+   * @returns {Promise<boolean>} - True if user is an admin
+   */
+  async function checkIsAdmin(userId) {
     try {
       const userDocRef = doc(db, 'users', userId);
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        return userData.role === 'artist';
+        return userData.role === 'admin';
       }
       return false;
     } catch (error) {
-      console.error('Check artist error:', error);
+      console.error('Check admin error:', error);
       return false;
     }
   }
+  
+  /**
+   * Get user profile data
+   * @param {string} userId - The user's ID
+   * @returns {Promise<Object>} - User profile data
+   */
+  async function getUserProfile(userId) {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        return { success: true, profile: { id: userDoc.id, ...userDoc.data() } };
+      }
+      return { success: false, error: 'User profile not found' };
+    } catch (error) {
+      console.error('Get profile error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  /**
+   * Update user profile
+   * @param {string} userId - The user's ID
+   * @param {Object} profileData - Updated profile data
+   * @returns {Promise<Object>} - Result with updated profile or error
+   */
+  async function updateUserProfile(userId, profileData) {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      
+      const updateData = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        username: profileData.username,
+        category: profileData.category,
+        bio: profileData.bio || '',
+        updatedAt: new Date().toISOString()
+      };
+      
+      await setDoc(userDocRef, updateData, { merge: true });
+      
+      return {
+        success: true,
+        data: updateData
+      };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  /**
+   * Check user permissions based on role
+   * @param {string} userId - The user's ID
+   * @param {string} permission - The permission to check
+   * @returns {Promise<boolean>} - True if user has permission
+   */
+  async function checkUserPermission(userId, permission) {
+    try {
+      const profile = await getUserProfile(userId);
+      
+      if (!profile.success) {
+        return false;
+      }
+      
+      const role = profile.profile.role;
+      
+      // Define permissions for each role
+      const permissions = {
+        admin: ['create_artwork', 'read_artwork', 'update_artwork', 'delete_artwork', 'upload_artwork', 'manage_profile', 'view_all', 'delete_user', 'update_role'],
+        artist: ['create_artwork', 'read_artwork', 'update_artwork', 'delete_own_artwork', 'upload_artwork', 'manage_own_profile', 'view_public'],
+        guest: ['read_artwork', 'view_public', 'manage_own_profile']
+      };
+      
+      const rolePermissions = permissions[role] || [];
+      return rolePermissions.includes(permission);
+    } catch (error) {
+      console.error('Check permission error:', error);
+      return false;
+    }
+  }
+  
+  // Export functions globally
+  window.saveArtworkToFirestore = saveArtworkToFirestore;
+  window.getArtworksByArtist = getArtworksByArtist;
+  window.getPublicArtworks = getPublicArtworks;
+  window.updateArtwork = updateArtwork;
+  window.deleteArtwork = deleteArtwork;
+  window.checkIsArtist = checkIsArtist;
+  window.checkIsAdmin = checkIsAdmin;
+  window.getUserProfile = getUserProfile;
+  window.updateUserProfile = updateUserProfile;
+  window.checkUserPermission = checkUserPermission;
   
   /**
    * Complete artwork upload flow (upload + save to database)
@@ -339,6 +523,7 @@
     const lName=document.getElementById('lName-sp').value;
     const username=document.getElementById('username-sp').value;
     const role=document.getElementById('role-sp').value;
+    const category=document.getElementById('category-sp').value;
     const password=document.getElementById('password-sp').value;
 
     const auth=getAuth();
@@ -352,6 +537,7 @@
             firstName: fName,
             lastName: lName,
             role: role,
+            category: category,
             createdAt: new Date().toISOString()
         };
         showMessage('Account Created Successfully', 'signUpMessage');
@@ -530,4 +716,10 @@
   window.getPublicArtworks = getPublicArtworks;
   window.uploadAndSaveArtwork = uploadAndSaveArtwork;
   window.checkIsArtist = checkIsArtist;
+  window.checkIsAdmin = checkIsAdmin;
   window.validateImageFile = validateImageFile;
+  window.updateArtwork = updateArtwork;
+  window.deleteArtwork = deleteArtwork;
+  window.getUserProfile = getUserProfile;
+  window.updateUserProfile = updateUserProfile;
+  window.checkUserPermission = checkUserPermission;
