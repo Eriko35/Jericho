@@ -1,909 +1,721 @@
-/**
- * Supabase Client Functions
- * ========================
- * This file provides client-side functions for interacting with Supabase
- * Storage and Database for the Jericho Museum application.
- * 
- * Features:
- * - Supabase client initialization with environment variables
- * - File upload with validation (type, size)
- * - Unique file path generation based on user ID and timestamp
- * - Artwork metadata management
- * - Data fetching functions for artists and guests
- * - Comprehensive error handling
- * 
- * Environment Variables Required:
- * - SUPABASE_URL: Your Supabase project URL
- * - SUPABASE_ANON_KEY: Your Supabase anonymous (public) key
- * 
- * Storage Buckets:
- * - artwork-images: For artist artwork uploads
- * - profile-pictures: For user profile images
- */
+// Supabase Client Configuration
+// This file replaces Firebase with Supabase for authentication, storage, and database
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // ============================================
-// SUPABASE CLIENT INITIALIZATION
+// SUPABASE CONFIGURATION
 // ============================================
 
-// Get environment variables (these should be set in your .env file or HTML)
-// In production, use import.meta.env.VITE_SUPABASE_URL and import.meta.env.VITE_SUPABASE_ANON_KEY
-const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'your-anon-key';
+// Replace these with your actual Supabase credentials
+// You can get these from your Supabase project dashboard
+const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL'; // e.g., 'https://your-project.supabase.co'
+const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY'; // e.g., 'eyJhbGciOiJIUzI1NiIs...'
 
-/**
- * Initialize and export Supabase client
- * The client is configured with:
- * - Global headers for authorization
- * - Auto-refresh of tokens
- * - Persistent sessions
- */
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  },
-  global: {
-    headers: {
-      'x-client-info': 'jericho-museum-app'
-    }
-  }
-});
+// Create Supabase client
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ============================================
-// CONFIGURATION CONSTANTS
+// STORAGE CONFIGURATION
+// ============================================
+
+// Bucket name for artwork storage
+const ARTWORK_BUCKET = 'artworks';
+
+// Allowed file types for image uploads
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+// Maximum file size (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// ============================================
+// VALIDATION FUNCTIONS
 // ============================================
 
 /**
- * Storage bucket names
- */
-const STORAGE_BUCKETS = {
-  ARTWORK: 'artwork-images',
-  PROFILE: 'profile-pictures'
-};
-
-/**
- * Allowed file types for image uploads
- */
-const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml'
-];
-
-/**
- * Maximum file size limits (in bytes)
- */
-const FILE_SIZE_LIMITS = {
-  ARTWORK: 10 * 1024 * 1024,  // 10MB for artwork
-  PROFILE: 2 * 1024 * 1024     // 2MB for profile pictures
-};
-
-// ============================================
-// ERROR HANDLING UTILITIES
-// ============================================
-
-/**
- * Custom error class for Supabase operations
- * Provides structured error information with user-friendly messages
- */
-class SupabaseError extends Error {
-  constructor(message, code, details = null) {
-    super(message);
-    this.name = 'SupabaseError';
-    this.code = code;
-    this.details = details;
-    this.timestamp = new Date().toISOString();
-  }
-}
-
-/**
- * Handle Supabase errors and return structured response
- * @param {Error} error - The error from Supabase
- * @param {string} operation - The operation that failed
- * @returns {Object} Structured error response
- */
-function handleSupabaseError(error, operation = 'operation') {
-  console.error(`Supabase error during ${operation}:`, error);
-  
-  // Determine error type and provide user-friendly message
-  let userMessage = 'An error occurred. Please try again.';
-  let errorCode = 'UNKNOWN_ERROR';
-  
-  if (error.message) {
-    if (error.message.includes('storage')) {
-      errorCode = 'STORAGE_ERROR';
-      userMessage = 'File upload failed. Please check the file and try again.';
-    } else if (error.message.includes('fetch')) {
-      errorCode = 'NETWORK_ERROR';
-      userMessage = 'Network error. Please check your connection.';
-    } else if (error.message.includes('permission') || error.message.includes('row-level security')) {
-      errorCode = 'PERMISSION_DENIED';
-      userMessage = 'You do not have permission to perform this action.';
-    } else if (error.message.includes('JWT')) {
-      errorCode = 'AUTH_ERROR';
-      userMessage = 'Session expired. Please log in again.';
-    }
-  }
-  
-  return {
-    success: false,
-    error: {
-      message: userMessage,
-      code: errorCode,
-      originalError: error.message,
-      operation,
-      timestamp: new Date().toISOString()
-    }
-  };
-}
-
-/**
- * Create a success response object
- * @param {any} data - The data to return
- * @param {string} message - Optional success message
- * @returns {Object} Structured success response
- */
-function createSuccessResponse(data, message = 'Success') {
-  return {
-    success: true,
-    data,
-    message,
-    timestamp: new Date().toISOString()
-  };
-}
-
-// ============================================
-// FILE VALIDATION FUNCTIONS
-// ============================================
-
-/**
- * Validate image file type
+ * Validate image file type and size
  * @param {File} file - The file to validate
- * @param {string} context - The upload context ('artwork' or 'profile')
- * @returns {Object} Validation result with isValid boolean and error message
+ * @returns {Object} - Validation result with isValid and error message
  */
-function validateImageFile(file, context = 'artwork') {
-  // Check if file exists
+function validateImageFile(file) {
   if (!file) {
-    return {
-      isValid: false,
-      error: 'No file provided'
-    };
+    return { isValid: false, error: 'No file provided' };
   }
   
-  // Check file type
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    return {
-      isValid: false,
-      error: `Invalid file type. Allowed types: ${ALLOWED_IMAGE_TYPES.join(', ')}`
+    return { 
+      isValid: false, 
+      error: `Invalid file type. Allowed: JPEG, PNG, GIF, WebP` 
     };
   }
   
-  // Check file size based on context
-  const maxSize = context === 'artwork' ? FILE_SIZE_LIMITS.ARTWORK : FILE_SIZE_LIMITS.PROFILE;
-  if (file.size > maxSize) {
-    const maxSizeMB = (maxSize / (1024 * 1024)).toFixed(2);
-    return {
-      isValid: false,
-      error: `File too large. Maximum size: ${maxSizeMB}MB`
+  if (file.size > MAX_FILE_SIZE) {
+    return { 
+      isValid: false, 
+      error: `File too large. Maximum size: 10MB` 
     };
   }
   
-  return {
-    isValid: true,
-    error: null
-  };
+  return { isValid: true, error: null };
 }
 
 /**
- * Generate unique file path based on user ID and timestamp
- * @param {string} userId - The user's ID
+ * Generate unique file path for artwork
+ * @param {string} userId - Artist's user ID
  * @param {string} fileName - Original file name
- * @param {string} type - Type of upload ('artwork' or 'profile')
- * @returns {string} Unique file path
+ * @returns {string} - Unique file path
  */
-function generateFilePath(userId, fileName, type = 'artwork') {
+function generateArtworkPath(userId, fileName) {
   const timestamp = Date.now();
   const randomSuffix = Math.random().toString(36).substring(2, 8);
-  const fileExtension = fileName.split('.').pop();
-  
-  // Create path structure: type/userId/timestamp-randomSuffix.extension
-  return `${type}/${userId}/${timestamp}-${randomSuffix}.${fileExtension}`;
+  const extension = fileName.split('.').pop();
+  return `artworks/${userId}/${timestamp}-${randomSuffix}.${extension}`;
 }
 
 // ============================================
-// STORAGE UPLOAD FUNCTIONS
+// AUTHENTICATION FUNCTIONS
+// ============================================
+
+/**
+ * Sign up a new user
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Promise<Object>} - Result with user data or error
+ */
+async function signUp(email, password) {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password
+    });
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      user: data.user,
+      session: data.session
+    };
+  } catch (error) {
+    console.error('Sign up error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Sign in a user
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Promise<Object>} - Result with user data or error
+ */
+async function signIn(email, password) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      user: data.user,
+      session: data.session
+    };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Sign out the current user
+ * @returns {Promise<Object>} - Result with success or error
+ */
+async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get current authenticated user
+ * @returns {Promise<Object>} - Current user or null
+ */
+async function getCurrentUser() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return user;
+  } catch (error) {
+    console.error('Get user error:', error);
+    return null;
+  }
+}
+
+/**
+ * Listen for authentication state changes
+ * @param {Function} callback - Callback function with user parameter
+ * @returns {Function} - Unsubscribe function
+ */
+function onAuthStateChanged(callback) {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      callback(session?.user || null);
+    }
+  });
+}
+
+// ============================================
+// DATABASE FUNCTIONS (Supabase PostgtreSQL)
+// ============================================
+
+/**
+ * Save user profile to database
+ * @param {string} userId - User's ID
+ * @param {Object} userData - User data to save
+ * @returns {Promise<Object>} - Result with saved data or error
+ */
+async function saveUserProfile(userId, userData) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        id: userId,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role || 'guest',
+        createdAt: new Date().toISOString()
+      })
+      .select();
+    
+    if (error) throw error;
+    
+    return { success: true, data: data[0] };
+  } catch (error) {
+    console.error('Save profile error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get user profile from database
+ * @param {string} userId - User's ID
+ * @returns {Promise<Object>} - User profile data
+ */
+async function getUserProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    return { success: true, data: data };
+  } catch (error) {
+    console.error('Get profile error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Save artwork to database
+ * @param {string} artistId - The artist's user ID
+ * @param {Object} artworkData - Artwork data including title, description, image URL
+ * @returns {Promise<Object>} - Result with saved artwork or error
+ */
+async function saveArtworkToDatabase(artistId, artworkData) {
+  try {
+    const { data, error } = await supabase
+      .from('artworks')
+      .insert({
+        title: artworkData.title,
+        description: artworkData.description || '',
+        imageUrl: artworkData.imageUrl,
+        imagePath: artworkData.imagePath || '',
+        artistId: artistId,
+        tags: artworkData.tags || [],
+        createdAt: new Date().toISOString(),
+        isPublic: artworkData.isPublic !== false
+      })
+      .select();
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      id: data[0].id,
+      data: data[0]
+    };
+  } catch (error) {
+    console.error('Save artwork error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get all artworks by artist
+ * @param {string} artistId - The artist's user ID
+ * @returns {Promise<Array>} - Array of artwork documents
+ */
+async function getArtworksByArtist(artistId) {
+  try {
+    const { data, error } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('artistId', artistId)
+      .order('createdAt', { ascending: false });
+    
+    if (error) throw error;
+    
+    return { success: true, artworks: data };
+  } catch (error) {
+    console.error('Get artworks error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get all public artworks (for guests)
+ * @returns {Promise<Array>} - Array of public artwork documents
+ */
+async function getPublicArtworks() {
+  try {
+    const { data, error } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('isPublic', true)
+      .order('createdAt', { ascending: false });
+    
+    if (error) throw error;
+    
+    return { success: true, artworks: data };
+  } catch (error) {
+    console.error('Get public artworks error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Check if user is an artist
+ * @param {string} userId - The user's ID
+ * @returns {Promise<boolean>} - True if user is an artist
+ */
+async function checkIsArtist(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    
+    if (error) return false;
+    return data.role === 'artist';
+  } catch (error) {
+    console.error('Check artist error:', error);
+    return false;
+  }
+}
+
+// ============================================
+// STORAGE FUNCTIONS (Supabase Storage)
 // ============================================
 
 /**
  * Upload artwork image to Supabase Storage
- * Artists can upload their artwork with metadata including title, description, creation date, and tags.
- * 
  * @param {File} file - The image file to upload
  * @param {string} userId - The artist's user ID
- * @param {Object} metadata - Artwork metadata
- * @returns {Promise<Object>} Result with public URL or error
+ * @returns {Promise<Object>} - Result with download URL or error
  */
-async function uploadArtwork(file, userId, metadata) {
+async function uploadArtworkImage(file, userId) {
   try {
     // Validate file
-    const validation = validateImageFile(file, 'artwork');
+    const validation = validateImageFile(file);
     if (!validation.isValid) {
-      return handleSupabaseError(new Error(validation.error), 'file validation');
-    }
-    
-    // Validate required metadata
-    if (!metadata || !metadata.title) {
-      return handleSupabaseError(new Error('Title is required'), 'metadata validation');
+      throw new Error(validation.error);
     }
     
     // Generate unique file path
-    const filePath = generateFilePath(userId, file.name, 'artwork');
+    const filePath = generateArtworkPath(userId, file.name);
     
     // Upload file to Supabase Storage
     const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKETS.ARTWORK)
+      .from(ARTWORK_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
         contentType: file.type
       });
     
-    if (error) {
-      return handleSupabaseError(error, 'artwork upload');
-    }
+    if (error) throw error;
     
     // Get public URL for the uploaded file
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKETS.ARTWORK)
+    const { data: urlData, error: urlError } = supabase.storage
+      .from(ARTWORK_BUCKET)
       .getPublicUrl(filePath);
     
-    if (!urlData || !urlData.publicUrl) {
-      return handleSupabaseError(new Error('Failed to get public URL'), 'URL generation');
-    }
+    if (urlError) throw urlError;
     
-    // Return success with public URL and file path
-    return createSuccessResponse({
-      publicUrl: urlData.publicUrl,
-      filePath: filePath,
+    return {
+      success: true,
+      url: urlData.publicUrl,
+      path: filePath,
       fileName: file.name,
       fileSize: file.size,
-      contentType: file.type,
-      metadata: {
-        ...metadata,
-        uploadedAt: new Date().toISOString()
-      }
-    }, 'Artwork uploaded successfully');
+      contentType: file.type
+    };
     
   } catch (error) {
-    console.error('Upload artwork error:', error);
-    return handleSupabaseError(error, 'artwork upload');
+    console.error('Upload error:', error);
+    return {
+      success: false,
+      error: error.message || 'Upload failed'
+    };
   }
 }
 
 /**
- * Upload profile picture to Supabase Storage
- * Both artists and guests can upload profile pictures.
- * 
- * @param {File} file - The image file to upload
- * @param {string} userId - The user's ID
- * @returns {Promise<Object>} Result with public URL or error
- */
-async function uploadProfilePicture(file, userId) {
-  try {
-    // Validate file
-    const validation = validateImageFile(file, 'profile');
-    if (!validation.isValid) {
-      return handleSupabaseError(new Error(validation.error), 'file validation');
-    }
-    
-    // Generate unique file path
-    const filePath = generateFilePath(userId, file.name, 'profile');
-    
-    // Upload file to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKETS.PROFILE)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: file.type
-      });
-    
-    if (error) {
-      return handleSupabaseError(error, 'profile picture upload');
-    }
-    
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKETS.PROFILE)
-      .getPublicUrl(filePath);
-    
-    return createSuccessResponse({
-      publicUrl: urlData.publicUrl,
-      filePath: filePath
-    }, 'Profile picture uploaded successfully');
-    
-  } catch (error) {
-    console.error('Upload profile picture error:', error);
-    return handleSupabaseError(error, 'profile picture upload');
-  }
-}
-
-/**
- * Delete file from Supabase Storage
+ * Delete artwork image from Supabase Storage
  * @param {string} filePath - The path of the file to delete
- * @param {string} bucket - The storage bucket name
- * @returns {Promise<Object>} Result with success or error
+ * @returns {Promise<Object>} - Result with success or error
  */
-async function deleteFile(filePath, bucket = STORAGE_BUCKETS.ARTWORK) {
+async function deleteArtworkImage(filePath) {
   try {
-    const { data, error } = await supabase.storage
-      .from(bucket)
+    const { error } = await supabase.storage
+      .from(ARTWORK_BUCKET)
       .remove([filePath]);
     
-    if (error) {
-      return handleSupabaseError(error, 'file deletion');
-    }
+    if (error) throw error;
     
-    return createSuccessResponse({ deleted: true }, 'File deleted successfully');
-    
+    return { success: true };
   } catch (error) {
-    console.error('Delete file error:', error);
-    return handleSupabaseError(error, 'file deletion');
-  }
-}
-
-// ============================================
-// DATABASE OPERATIONS (ARTWORK)
-// ============================================
-
-/**
- * Save artwork metadata to database
- * @param {string} artistId - The artist's user ID
- * @param {Object} artworkData - Artwork data to save
- * @returns {Promise<Object>} Result with saved artwork or error
- */
-async function saveArtwork(artistId, artworkData) {
-  try {
-    if (!artworkData.title || !artworkData.imageUrl) {
-      return handleSupabaseError(new Error('Title and image URL are required'), 'validation');
-    }
-    
-    const artworkRecord = {
-      title: artworkData.title,
-      description: artworkData.description || '',
-      imageUrl: artworkData.imageUrl,
-      imagePath: artworkData.filePath || '',
-      artistId: artistId,
-      tags: artworkData.tags || [],
-      createdAt: artworkData.creationDate || new Date().toISOString(),
-      uploadedAt: new Date().toISOString(),
-      isPublic: artworkData.isPublic !== false
-    };
-    
-    const { data, error } = await supabase
-      .from('artworks')
-      .insert([artworkRecord])
-      .select()
-      .single();
-    
-    if (error) {
-      return handleSupabaseError(error, 'save artwork');
-    }
-    
-    return createSuccessResponse(data, 'Artwork saved successfully');
-    
-  } catch (error) {
-    console.error('Save artwork error:', error);
-    return handleSupabaseError(error, 'save artwork');
+    console.error('Delete error:', error);
+    return { success: false, error: error.message };
   }
 }
 
 /**
- * Fetch artwork by artist ID
- * @param {string} artistId - The artist's user ID
- * @returns {Promise<Object>} Result with artworks array or error
+ * Get public URL for an image
+ * @param {string} filePath - The path of the file
+ * @returns {string} - Public URL
  */
-async function fetchArtworkByArtist(artistId) {
-  try {
-    if (!artistId) {
-      return handleSupabaseError(new Error('Artist ID is required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('artworks')
-      .select('*')
-      .eq('artistId', artistId)
-      .order('createdAt', { ascending: false });
-    
-    if (error) {
-      return handleSupabaseError(error, 'fetch artwork by artist');
-    }
-    
-    return createSuccessResponse(data || [], 'Artworks fetched successfully');
-    
-  } catch (error) {
-    console.error('Fetch artwork by artist error:', error);
-    return handleSupabaseError(error, 'fetch artwork by artist');
-  }
-}
-
-/**
- * Fetch all public artwork for guests
- * @param {number} limit - Maximum number of artworks
- * @param {number} offset - Offset for pagination
- * @returns {Promise<Object>} Result with artworks array or error
- */
-async function fetchPublicArtwork(limit = 20, offset = 0) {
-  try {
-    const { data, error } = await supabase
-      .from('artworks')
-      .select('*')
-      .eq('isPublic', true)
-      .order('createdAt', { ascending: false })
-      .range(offset, offset + limit - 1);
-    
-    if (error) {
-      return handleSupabaseError(error, 'fetch public artwork');
-    }
-    
-    return createSuccessResponse(data || [], 'Public artwork fetched successfully');
-    
-  } catch (error) {
-    console.error('Fetch public artwork error:', error);
-    return handleSupabaseError(error, 'fetch public artwork');
-  }
-}
-
-/**
- * Fetch single artwork by ID
- * @param {string} artworkId - The artwork ID
- * @returns {Promise<Object>} Result with artwork or error
- */
-async function fetchArtworkById(artworkId) {
-  try {
-    if (!artworkId) {
-      return handleSupabaseError(new Error('Artwork ID is required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('artworks')
-      .select('*')
-      .eq('id', artworkId)
-      .single();
-    
-    if (error) {
-      return handleSupabaseError(error, 'fetch artwork by ID');
-    }
-    
-    return createSuccessResponse(data, 'Artwork fetched successfully');
-    
-  } catch (error) {
-    console.error('Fetch artwork by ID error:', error);
-    return handleSupabaseError(error, 'fetch artwork by ID');
-  }
-}
-
-/**
- * Update artwork metadata
- * @param {string} artworkId - The artwork ID
- * @param {string} artistId - The artist's user ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<Object>} Result with updated artwork or error
- */
-async function updateArtwork(artworkId, artistId, updates) {
-  try {
-    if (!artworkId || !artistId) {
-      return handleSupabaseError(new Error('Artwork ID and Artist ID are required'), 'validation');
-    }
-    
-    const updatedData = {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    const { data, error } = await supabase
-      .from('artworks')
-      .update(updatedData)
-      .eq('id', artworkId)
-      .eq('artistId', artistId)
-      .select()
-      .single();
-    
-    if (error) {
-      return handleSupabaseError(error, 'update artwork');
-    }
-    
-    return createSuccessResponse(data, 'Artwork updated successfully');
-    
-  } catch (error) {
-    console.error('Update artwork error:', error);
-    return handleSupabaseError(error, 'update artwork');
-  }
-}
-
-/**
- * Delete artwork
- * @param {string} artworkId - The artwork ID
- * @param {string} artistId - The artist's user ID
- * @returns {Promise<Object>} Result with success or error
- */
-async function deleteArtwork(artworkId, artistId) {
-  try {
-    if (!artworkId || !artistId) {
-      return handleSupabaseError(new Error('Artwork ID and Artist ID are required'), 'validation');
-    }
-    
-    // Get artwork to find image path
-    const { data: artwork, error: fetchError } = await supabase
-      .from('artworks')
-      .select('imagePath')
-      .eq('id', artworkId)
-      .single();
-    
-    if (fetchError) {
-      return handleSupabaseError(fetchError, 'fetch artwork for deletion');
-    }
-    
-    // Delete artwork record
-    const { error: deleteError } = await supabase
-      .from('artworks')
-      .delete()
-      .eq('id', artworkId)
-      .eq('artistId', artistId);
-    
-    if (deleteError) {
-      return handleSupabaseError(deleteError, 'delete artwork');
-    }
-    
-    // Delete associated image
-    if (artwork && artwork.imagePath) {
-      await deleteFile(artwork.imagePath, STORAGE_BUCKETS.ARTWORK);
-    }
-    
-    return createSuccessResponse({ deleted: true }, 'Artwork deleted successfully');
-    
-  } catch (error) {
-    console.error('Delete artwork error:', error);
-    return handleSupabaseError(error, 'delete artwork');
-  }
-}
-
-// ============================================
-// FAVORITES OPERATIONS
-// ============================================
-
-/**
- * Add artwork to favorites
- * @param {string} userId - The user's ID
- * @param {string} artworkId - The artwork ID
- * @returns {Promise<Object>} Result with favorite record or error
- */
-async function addFavorite(userId, artworkId) {
-  try {
-    if (!userId || !artworkId) {
-      return handleSupabaseError(new Error('User ID and Artwork ID are required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('favorites')
-      .insert([{
-        userId: userId,
-        artworkId: artworkId,
-        createdAt: new Date().toISOString()
-      }])
-      .select()
-      .single();
-    
-    if (error) {
-      return handleSupabaseError(error, 'add favorite');
-    }
-    
-    return createSuccessResponse(data, 'Added to favorites');
-    
-  } catch (error) {
-    console.error('Add favorite error:', error);
-    return handleSupabaseError(error, 'add favorite');
-  }
-}
-
-/**
- * Remove artwork from favorites
- * @param {string} userId - The user's ID
- * @param {string} artworkId - The artwork ID
- * @returns {Promise<Object>} Result with success or error
- */
-async function removeFavorite(userId, artworkId) {
-  try {
-    if (!userId || !artworkId) {
-      return handleSupabaseError(new Error('User ID and Artwork ID are required'), 'validation');
-    }
-    
-    const { error } = await supabase
-      .from('favorites')
-      .delete()
-      .eq('userId', userId)
-      .eq('artworkId', artworkId);
-    
-    if (error) {
-      return handleSupabaseError(error, 'remove favorite');
-    }
-    
-    return createSuccessResponse({ removed: true }, 'Removed from favorites');
-    
-  } catch (error) {
-    console.error('Remove favorite error:', error);
-    return handleSupabaseError(error, 'remove favorite');
-  }
-}
-
-/**
- * Get user's favorites
- * @param {string} userId - The user's ID
- * @returns {Promise<Object>} Result with favorites array or error
- */
-async function getUserFavorites(userId) {
-  try {
-    if (!userId) {
-      return handleSupabaseError(new Error('User ID is required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('favorites')
-      .select('*, artworks(*)')
-      .eq('userId', userId)
-      .order('createdAt', { ascending: false });
-    
-    if (error) {
-      return handleSupabaseError(error, 'get favorites');
-    }
-    
-    return createSuccessResponse(data || [], 'Favorites fetched successfully');
-    
-  } catch (error) {
-    console.error('Get favorites error:', error);
-    return handleSupabaseError(error, 'get favorites');
-  }
-}
-
-// ============================================
-// ARTWORK REQUEST OPERATIONS
-// ============================================
-
-/**
- * Submit artwork request (Guest feature)
- * @param {string} requesterId - The guest's user ID
- * @param {Object} requestData - Request details
- * @returns {Promise<Object>} Result with request record or error
- */
-async function submitArtworkRequest(requesterId, requestData) {
-  try {
-    if (!requesterId || !requestData || !requestData.title || !requestData.description) {
-      return handleSupabaseError(new Error('Requester ID, title, and description are required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('artworkRequests')
-      .insert([{
-        requesterId: requesterId,
-        title: requestData.title,
-        description: requestData.description,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }])
-      .select()
-      .single();
-    
-    if (error) {
-      return handleSupabaseError(error, 'submit artwork request');
-    }
-    
-    return createSuccessResponse(data, 'Artwork request submitted successfully');
-    
-  } catch (error) {
-    console.error('Submit artwork request error:', error);
-    return handleSupabaseError(error, 'submit artwork request');
-  }
-}
-
-/**
- * Get user's artwork requests
- * @param {string} requesterId - The guest's user ID
- * @returns {Promise<Object>} Result with requests array or error
- */
-async function getUserRequests(requesterId) {
-  try {
-    if (!requesterId) {
-      return handleSupabaseError(new Error('Requester ID is required'), 'validation');
-    }
-    
-    const { data, error } = await supabase
-      .from('artworkRequests')
-      .select('*')
-      .eq('requesterId', requesterId)
-      .order('createdAt', { ascending: false });
-    
-    if (error) {
-      return handleSupabaseError(error, 'get user requests');
-    }
-    
-    return createSuccessResponse(data || [], 'Requests fetched successfully');
-    
-  } catch (error) {
-    console.error('Get user requests error:', error);
-    return handleSupabaseError(error, 'get user requests');
-  }
-}
-
-// ============================================
-// AUTHENTICATION HELPERS
-// ============================================
-
-/**
- * Get current authenticated user
- * @returns {Promise<Object>} User object or null
- */
-async function getCurrentUser() {
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error) {
-      console.error('Get current user error:', error);
-      return null;
-    }
-    
-    return user;
-    
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return null;
-  }
-}
-
-/**
- * Sign in with email and password
- * @param {string} email - User's email
- * @param {string} password - User's password
- * @returns {Promise<Object>} Result with user or error
- */
-async function signIn(email, password) {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    if (error) {
-      return handleSupabaseError(error, 'sign in');
-    }
-    
-    return createSuccessResponse(data, 'Signed in successfully');
-    
-  } catch (error) {
-    console.error('Sign in error:', error);
-    return handleSupabaseError(error, 'sign in');
-  }
-}
-
-/**
- * Sign out current user
- * @returns {Promise<Object>} Result with success or error
- */
-async function signOut() {
-  try {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      return handleSupabaseError(error, 'sign out');
-    }
-    
-    return createSuccessResponse({ signedOut: true }, 'Signed out successfully');
-    
-  } catch (error) {
-    console.error('Sign out error:', error);
-    return handleSupabaseError(error, 'sign out');
-  }
-}
-
-/**
- * Subscribe to authentication state changes
- * @param {Function} callback - Function to call on auth state change
- * @returns {Function} Unsubscribe function
- */
-function subscribeToAuthState(callback) {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    callback(event, session);
-  });
+function getImageUrl(filePath) {
+  const { data } = supabase.storage
+    .from(ARTWORK_BUCKET)
+    .getPublicUrl(filePath);
   
-  return () => subscription.unsubscribe();
+  return data.publicUrl;
 }
 
 // ============================================
-// COMPLETE UPLOAD FLOW
+// COMPLETE ARTWORK UPLOAD FLOW
 // ============================================
 
 /**
  * Complete artwork upload flow (upload + save to database)
- * @param {File} file - The artwork image file
- * @param {string} artistId - The artist's user ID
- * @param {Object} metadata - Artwork metadata
- * @returns {Promise<Object>} Complete result
+ * @param {File} file - The image file
+ * @param {string} userId - The artist's user ID
+ * @param {Object} metadata - Artwork metadata (title, description, tags)
+ * @returns {Promise<Object>} - Complete result
  */
-async function uploadCompleteArtwork(file, artistId, metadata) {
+async function uploadAndSaveArtwork(file, userId, metadata) {
   try {
-    // Step 1: Upload the image file
-    const uploadResult = await uploadArtwork(file, artistId, metadata);
+    // Step 1: Upload image to Supabase Storage
+    const uploadResult = await uploadArtworkImage(file, userId);
     
     if (!uploadResult.success) {
       return uploadResult;
     }
     
     // Step 2: Save artwork metadata to database
-    const saveResult = await saveArtwork(artistId, {
+    const saveResult = await saveArtworkToDatabase(userId, {
       title: metadata.title,
       description: metadata.description || '',
-      imageUrl: uploadResult.data.publicUrl,
-      filePath: uploadResult.data.filePath,
-      creationDate: metadata.creationDate,
+      imageUrl: uploadResult.url,
+      imagePath: uploadResult.path,
       tags: metadata.tags || [],
       isPublic: metadata.isPublic !== false
     });
     
     if (!saveResult.success) {
-      // If database save fails, clean up the uploaded file
-      await deleteFile(uploadResult.data.filePath, STORAGE_BUCKETS.ARTWORK);
+      // If database save fails, delete the uploaded image
+      await deleteArtworkImage(uploadResult.path);
       return saveResult;
     }
     
-    // Return combined result
-    return createSuccessResponse({
-      artwork: saveResult.data,
-      imageUrl: uploadResult.data.publicUrl,
-      filePath: uploadResult.data.filePath
-    }, 'Artwork uploaded and saved successfully');
+    return {
+      success: true,
+      id: saveResult.id,
+      imageUrl: uploadResult.url,
+      path: uploadResult.path,
+      ...saveResult.data
+    };
     
   } catch (error) {
-    console.error('Complete artwork upload error:', error);
-    return handleSupabaseError(error, 'complete artwork upload');
+    console.error('Complete upload error:', error);
+    return { success: false, error: error.message };
   }
 }
 
 // ============================================
-// EXPORT TO WINDOW OBJECT
+// UI HELPER FUNCTIONS
 // ============================================
 
-// Attach all functions to window for global access
-if (typeof window !== 'undefined') {
-  window.SupabaseClient = {
-    supabase,
-    uploadArtwork,
-    uploadProfilePicture,
-    uploadCompleteArtwork,
-    deleteFile,
-    saveArtwork,
-    fetchArtworkByArtist,
-    fetchPublicArtwork,
-    fetchArtworkById,
-    updateArtwork,
-    deleteArtwork,
-    addFavorite,
-    removeFavorite,
-    getUserFavorites,
-    submitArtworkRequest,
-    getUserRequests,
-    getCurrentUser,
-    signIn,
-    signOut,
-    subscribeToAuthState,
-    validateImageFile,
-    generateFilePath,
-    handleSupabaseError,
-    createSuccessResponse,
-    STORAGE_BUCKETS,
-    ALLOWED_IMAGE_TYPES,
-    FILE_SIZE_LIMITS
-  };
+function showMessage(message, divId) {
+  var messsageDiv = document.getElementById(divId);
+  messsageDiv.style.display = 'block';
+  messsageDiv.innerHTML = message;
+  messsageDiv.style.opacity = 1;
+  setTimeout(function() {
+    messsageDiv.style.opacity = 0;
+  }, 5000);
 }
+
+// ============================================
+// EVENT LISTENERS FOR AUTH
+// ============================================
+
+// Sign Up Event Listener
+const signUpButton = document.getElementById('submitSignUp');
+if (signUpButton) {
+  signUpButton.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const email = document.getElementById('email-sp').value;
+    const fName = document.getElementById('fName-sp').value;
+    const lName = document.getElementById('lName-sp').value;
+    const password = document.getElementById('password-sp').value;
+
+    const result = await signUp(email, password);
+    
+    if (result.success) {
+      showMessage('Account Created Successfully', 'signUpMessage');
+      
+      // Save user profile
+      await saveUserProfile(result.user.id, {
+        email: email,
+        firstName: fName,
+        lastName: lName,
+        role: 'guest' // Default role
+      });
+      
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1500);
+    } else {
+      if (result.error.includes('already been registered')) {
+        showMessage('Email Address Already Exists', 'signUpMessage');
+      } else if (result.error.includes('Password')) {
+        showMessage('Password should be at least 6 characters', 'signUpMessage');
+      } else if (result.error.includes('invalid email')) {
+        showMessage('Invalid email address', 'signUpMessage');
+      } else {
+        showMessage(result.error, 'signUpMessage');
+      }
+    }
+  });
+}
+
+// Sign In Event Listener
+const signInButton = document.getElementById('submitSignIn');
+if (signInButton) {
+  signInButton.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const email = document.getElementById('usr-email').value;
+    const password = document.getElementById('usr-password').value;
+
+    const result = await signIn(email, password);
+    
+    if (result.success) {
+      showMessage('Login is successful', 'signInMessage');
+      localStorage.setItem('loggedInUserId', result.user.id);
+      setTimeout(() => {
+        window.location.href = 'home2.html';
+      }, 1000);
+    } else {
+      if (result.error.includes('Invalid login') || result.error.includes('invalid-credential')) {
+        showMessage('Incorrect Email or Password', 'signInMessage');
+      } else {
+        showMessage('Account Does Not Exist', 'signInMessage');
+      }
+    }
+  });
+}
+
+// ============================================
+// ARTWORK UPLOAD HANDLER
+// ============================================
+
+/**
+ * Setup artwork upload functionality
+ * This connects the file input to the upload functions
+ */
+function setupArtworkUpload() {
+  const fileInput = document.getElementById('submContest');
+  const userId = localStorage.getItem('loggedInUserId');
+  
+  if (!fileInput) {
+    console.log('Artwork upload input not found on this page');
+    return;
+  }
+  
+  if (!userId) {
+    console.log('User not logged in');
+    return;
+  }
+  
+  // Add event listener for file selection
+  fileInput.addEventListener('change', async function(event) {
+    const file = event.target.files[0];
+    
+    if (!file) {
+      return;
+    }
+    
+    // Validate file
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+    
+    // Get artwork metadata from form or prompt user
+    let title = '';
+    let description = '';
+    
+    // Try to get from form inputs if they exist
+    const titleInput = document.getElementById('artworkTitle');
+    const descInput = document.getElementById('artworkDescription');
+    
+    if (titleInput && titleInput.value) {
+      title = titleInput.value;
+    } else {
+      // Prompt user for title if not available
+      title = prompt('Enter artwork title:');
+      if (!title || title.trim() === '') {
+        alert('Title is required');
+        return;
+      }
+    }
+    
+    if (descInput && descInput.value) {
+      description = descInput.value;
+    } else {
+      // Prompt user for description
+      description = prompt('Enter artwork description (optional):') || '';
+    }
+    
+    try {
+      // Show loading indicator
+      const originalText = fileInput.parentElement.innerText;
+      fileInput.parentElement.innerText = 'Uploading...';
+      fileInput.disabled = true;
+      
+      // Check if user is an artist
+      const isArtistUser = await checkIsArtist(userId);
+      if (!isArtistUser) {
+        alert('Only artists can upload artwork. Please contact admin to upgrade your account.');
+        fileInput.parentElement.innerText = originalText;
+        fileInput.disabled = false;
+        return;
+      }
+      
+      // Upload artwork
+      const result = await uploadAndSaveArtwork(file, userId, {
+        title: title.trim(),
+        description: description.trim(),
+        tags: [],
+        isPublic: true
+      });
+      
+      if (result.success) {
+        alert('Artwork uploaded successfully!');
+        // Reset form
+        fileInput.value = '';
+        // Clear preview if exists
+        const preview = document.getElementById('uploadPreview');
+        if (preview) {
+          preview.style.display = 'none';
+          preview.src = '';
+        }
+        // Clear title/description inputs if they exist
+        if (titleInput) titleInput.value = '';
+        if (descInput) descInput.value = '';
+      } else {
+        alert('Upload failed: ' + result.error);
+      }
+      
+      // Restore button state
+      fileInput.parentElement.innerText = originalText;
+      fileInput.disabled = false;
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed: ' + error.message);
+      fileInput.parentElement.innerText = originalText;
+      fileInput.disabled = false;
+    }
+  });
+}
+
+// ============================================
+// LOGOUT FUNCTION
+// ============================================
+
+function logOut() {
+  signOut().then(() => {
+    localStorage.removeItem('loggedInUserId');
+    window.location.href = 'index.html';
+  });
+}
+
+// ============================================
+// AUTH GUARD
+// ============================================
+
+function setupAuthGuard() {
+  onAuthStateChanged((user) => {
+    if (!user) {
+      // Not logged in → redirect to login page
+      window.location.href = 'index.html';
+    } else {
+      // Logged in → stay on current page
+      console.log('Logged in as:', user.email);
+    }
+  });
+}
+
+// Export for use in other files
+window.supabase = supabase;
+window.signUp = signUp;
+window.signIn = signIn;
+window.signOut = signOut;
+window.getCurrentUser = getCurrentUser;
+window.onAuthStateChanged = onAuthStateChanged;
+window.saveUserProfile = saveUserProfile;
+window.getUserProfile = getUserProfile;
+window.uploadArtworkImage = uploadArtworkImage;
+window.deleteArtworkImage = deleteArtworkImage;
+window.getImageUrl = getImageUrl;
+window.saveArtworkToDatabase = saveArtworkToDatabase;
+window.getArtworksByArtist = getArtworksByArtist;
+window.getPublicArtworks = getPublicArtworks;
+window.checkIsArtist = checkIsArtist;
+window.uploadAndSaveArtwork = uploadAndSaveArtwork;
+window.setupArtworkUpload = setupArtworkUpload;
+window.logOut = logOut;
+window.setupAuthGuard = setupAuthGuard;
+window.showMessage = showMessage;
