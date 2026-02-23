@@ -95,6 +95,22 @@
         font-size: 14px;
         transition: all 0.3s ease;
     }
+    
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid transparent;
+        color: white;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .form-group select option {
+        background: #2e2222;
+        color: white;
+    }
 
     .form-group input::placeholder {
         color: #999;
