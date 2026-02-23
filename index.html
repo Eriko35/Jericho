@@ -5,17 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kamuseo Log In</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="css/stylesheet.css">
   <script type="module" src="js/firebase.js"></script>
-  <style>
-    body, input, button, a {
-        font-family: 'Montserrat', sans-serif;
-    }
-  </style>
 </head>
 
 <body class="loginbg">
@@ -59,23 +50,42 @@
         <div id="signUpMessage" class="messageDiv" style="display:none"></div>
 
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="email-sp" placeholder="Enter your email">
+          <label for="email-sp">Email</label>
+          <input type="email" id="email-sp" placeholder="Enter your email" required aria-required="true">
         </div>
 
         <div class="form-group">
-          <label>First Name</label>
-          <input type="text" id="fName-sp" placeholder="First name">
+          <label for="fName-sp">First Name</label>
+          <input type="text" id="fName-sp" placeholder="Enter your first name" required aria-required="true">
         </div>
 
         <div class="form-group">
-          <label>Last Name</label>
-          <input type="text" id="lName-sp" placeholder="Last name">
+          <label for="lName-sp">Last Name</label>
+          <input type="text" id="lName-sp" placeholder="Enter your last name" required aria-required="true">
         </div>
 
         <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="password-sp" placeholder="Password">
+          <label for="username-sp">Username</label>
+          <input type="text" id="username-sp" placeholder="Choose a username" required minlength="3" maxlength="20" aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label for="role-sp">I am a:</label>
+          <select id="role-sp" name="role" required aria-required="true">
+            <option value="">Select your role</option>
+            <option value="artist">Artist</option>
+            <option value="guest">Guest</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="password-sp">Password</label>
+          <input type="password" id="password-sp" placeholder="Create a password" required minlength="6" aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-password-sp">Confirm Password</label>
+          <input type="password" id="confirm-password-sp" placeholder="Confirm your password" required minlength="6" aria-required="true">
         </div>
 
         <button class="btn-type" id="submitSignUp" type="button">
@@ -106,6 +116,25 @@
       else {
         signup.style.display = "block";
       }
+    }
+
+    // Password match validation for signup form
+    const submitSignUp = document.getElementById("submitSignUp");
+    if (submitSignUp) {
+      submitSignUp.addEventListener("click", function(event) {
+        const password = document.getElementById("password-sp").value;
+        const confirmPassword = document.getElementById("confirm-password-sp").value;
+        const signUpMessage = document.getElementById("signUpMessage");
+
+        if (password !== confirmPassword) {
+          event.preventDefault();
+          signUpMessage.textContent = "Passwords do not match. Please try again.";
+          signUpMessage.style.display = "block";
+          signUpMessage.style.color = "#ff4444";
+          return false;
+        }
+        signUpMessage.style.display = "none";
+      });
     }
 
     // Default view
