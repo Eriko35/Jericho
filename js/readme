@@ -1,42 +1,31 @@
-CREATE TABLE IF NOT EXISTS public.reports (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    reporter_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
-    reported_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-    artwork_id UUID REFERENCES public.artworks(id) ON DELETE SET NULL,
-    reason TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved', 'rejected')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS TEXT AS $$
+DECLARE
+    user_role TEXT;
+BEGIN
+    SELECT role INTO user_role
+    FROM public.user_profiles
+    WHERE id = auth.uid();
+    RETURN COALESCE(user_role, 'guest');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admins can view reports"
-    ON public.reports FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.user_profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+CREATE OR REPLACE FUNCTION public.is_artist()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.user_profiles
+        WHERE id = auth.uid() AND role = 'artist'
     );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE POLICY "Users can create reports"
-    ON public.reports FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Admins can update reports"
-    ON public.reports FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.user_profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.user_profiles
+        WHERE id = auth.uid() AND role = 'admin'
     );
-
-CREATE POLICY "Admins can delete reports"
-    ON public.reports FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.user_profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
