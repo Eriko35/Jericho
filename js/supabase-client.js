@@ -27,8 +27,8 @@
 
 // Get environment variables (these should be set in your .env file or HTML)
 // In production, use import.meta.env.VITE_SUPABASE_URL and import.meta.env.VITE_SUPABASE_ANON_KEY
-const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://qdalybrlsjlqnfgnpzdu.supabase.co';
-const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkYWx5YnJsc2pscW5mZ25wemR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI4MDksImV4cCI6MjA4NzQwODgwOX0.QW-Zem0LORZUpyjMw4MPfEsoZ7qHU6kN6nMtVVKDu0w';
+const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'your-anon-key';
 
 /**
  * Initialize and export Supabase client
@@ -49,9 +49,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
   }
 });
-
-// Export for use in other modules
-export { supabase };
 
 // ============================================
 // CONFIGURATION CONSTANTS
@@ -228,18 +225,9 @@ function generateFilePath(userId, fileName, type = 'artwork') {
  * @param {File} file - The image file to upload
  * @param {string} userId - The artist's user ID
  * @param {Object} metadata - Artwork metadata
- * @param {string} metadata.title - Artwork title
- * @param {string} metadata.description - Artwork description
- * @param {string} metadata.creationDate - Date the artwork was created
- * @param {Array} metadata.tags - Array of tags for the artwork
  * @returns {Promise<Object>} Result with public URL or error
- * 
- * Security Considerations:
- * - File path includes userId to ensure artists can only upload to their own folder
- * - File validation ensures only allowed image types and sizes
- * - Metadata is validated before storing
  */
-export async function uploadArtwork(file, userId, metadata) {
+async function uploadArtwork(file, userId, metadata) {
   try {
     // Validate file
     const validation = validateImageFile(file, 'artwork');
@@ -304,7 +292,7 @@ export async function uploadArtwork(file, userId, metadata) {
  * @param {string} userId - The user's ID
  * @returns {Promise<Object>} Result with public URL or error
  */
-export async function uploadProfilePicture(file, userId) {
+async function uploadProfilePicture(file, userId) {
   try {
     // Validate file
     const validation = validateImageFile(file, 'profile');
@@ -320,7 +308,7 @@ export async function uploadProfilePicture(file, userId) {
       .from(STORAGE_BUCKETS.PROFILE)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true, // Allow updating existing profile picture
+        upsert: true,
         contentType: file.type
       });
     
@@ -350,7 +338,7 @@ export async function uploadProfilePicture(file, userId) {
  * @param {string} bucket - The storage bucket name
  * @returns {Promise<Object>} Result with success or error
  */
-export async function deleteFile(filePath, bucket = STORAGE_BUCKETS.ARTWORK) {
+async function deleteFile(filePath, bucket = STORAGE_BUCKETS.ARTWORK) {
   try {
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -374,20 +362,16 @@ export async function deleteFile(filePath, bucket = STORAGE_BUCKETS.ARTWORK) {
 
 /**
  * Save artwork metadata to database
- * Creates a new artwork record in the artworks table
- * 
  * @param {string} artistId - The artist's user ID
  * @param {Object} artworkData - Artwork data to save
  * @returns {Promise<Object>} Result with saved artwork or error
  */
-export async function saveArtwork(artistId, artworkData) {
+async function saveArtwork(artistId, artworkData) {
   try {
-    // Validate required fields
     if (!artworkData.title || !artworkData.imageUrl) {
       return handleSupabaseError(new Error('Title and image URL are required'), 'validation');
     }
     
-    // Prepare artwork record
     const artworkRecord = {
       title: artworkData.title,
       description: artworkData.description || '',
@@ -400,7 +384,6 @@ export async function saveArtwork(artistId, artworkData) {
       isPublic: artworkData.isPublic !== false
     };
     
-    // Insert into database
     const { data, error } = await supabase
       .from('artworks')
       .insert([artworkRecord])
@@ -421,12 +404,10 @@ export async function saveArtwork(artistId, artworkData) {
 
 /**
  * Fetch artwork by artist ID
- * Artists can view their own artworks
- * 
  * @param {string} artistId - The artist's user ID
  * @returns {Promise<Object>} Result with artworks array or error
  */
-export async function fetchArtworkByArtist(artistId) {
+async function fetchArtworkByArtist(artistId) {
   try {
     if (!artistId) {
       return handleSupabaseError(new Error('Artist ID is required'), 'validation');
@@ -452,13 +433,11 @@ export async function fetchArtworkByArtist(artistId) {
 
 /**
  * Fetch all public artwork for guests
- * Guests have read-only access to public artwork
- * 
- * @param {number} limit - Maximum number of artworks to return
- * @param {number} offset - Number of artworks to skip (for pagination)
+ * @param {number} limit - Maximum number of artworks
+ * @param {number} offset - Offset for pagination
  * @returns {Promise<Object>} Result with artworks array or error
  */
-export async function fetchPublicArtwork(limit = 20, offset = 0) {
+async function fetchPublicArtwork(limit = 20, offset = 0) {
   try {
     const { data, error } = await supabase
       .from('artworks')
@@ -481,12 +460,10 @@ export async function fetchPublicArtwork(limit = 20, offset = 0) {
 
 /**
  * Fetch single artwork by ID
- * Public endpoint - anyone can view artwork details
- * 
  * @param {string} artworkId - The artwork ID
  * @returns {Promise<Object>} Result with artwork or error
  */
-export async function fetchArtworkById(artworkId) {
+async function fetchArtworkById(artworkId) {
   try {
     if (!artworkId) {
       return handleSupabaseError(new Error('Artwork ID is required'), 'validation');
@@ -512,26 +489,22 @@ export async function fetchArtworkById(artworkId) {
 
 /**
  * Update artwork metadata
- * Only the artist who created the artwork can update it
- * 
  * @param {string} artworkId - The artwork ID
- * @param {string} artistId - The artist's user ID (for verification)
+ * @param {string} artistId - The artist's user ID
  * @param {Object} updates - Fields to update
  * @returns {Promise<Object>} Result with updated artwork or error
  */
-export async function updateArtwork(artworkId, artistId, updates) {
+async function updateArtwork(artworkId, artistId, updates) {
   try {
     if (!artworkId || !artistId) {
       return handleSupabaseError(new Error('Artwork ID and Artist ID are required'), 'validation');
     }
     
-    // Add updated timestamp
     const updatedData = {
       ...updates,
       updatedAt: new Date().toISOString()
     };
     
-    // Update only if the artist owns the artwork
     const { data, error } = await supabase
       .from('artworks')
       .update(updatedData)
@@ -554,20 +527,17 @@ export async function updateArtwork(artworkId, artistId, updates) {
 
 /**
  * Delete artwork
- * Only the artist who created the artwork can delete it
- * Also deletes the associated image from storage
- * 
  * @param {string} artworkId - The artwork ID
- * @param {string} artistId - The artist's user ID (for verification)
+ * @param {string} artistId - The artist's user ID
  * @returns {Promise<Object>} Result with success or error
  */
-export async function deleteArtwork(artworkId, artistId) {
+async function deleteArtwork(artworkId, artistId) {
   try {
     if (!artworkId || !artistId) {
       return handleSupabaseError(new Error('Artwork ID and Artist ID are required'), 'validation');
     }
     
-    // First, get the artwork to find the image path
+    // Get artwork to find image path
     const { data: artwork, error: fetchError } = await supabase
       .from('artworks')
       .select('imagePath')
@@ -578,7 +548,7 @@ export async function deleteArtwork(artworkId, artistId) {
       return handleSupabaseError(fetchError, 'fetch artwork for deletion');
     }
     
-    // Delete the artwork record (will fail if artist doesn't own it due to RLS)
+    // Delete artwork record
     const { error: deleteError } = await supabase
       .from('artworks')
       .delete()
@@ -589,7 +559,7 @@ export async function deleteArtwork(artworkId, artistId) {
       return handleSupabaseError(deleteError, 'delete artwork');
     }
     
-    // Delete the associated image from storage if it exists
+    // Delete associated image
     if (artwork && artwork.imagePath) {
       await deleteFile(artwork.imagePath, STORAGE_BUCKETS.ARTWORK);
     }
@@ -608,13 +578,11 @@ export async function deleteArtwork(artworkId, artistId) {
 
 /**
  * Add artwork to favorites
- * Both artists and guests can favorite artworks
- * 
  * @param {string} userId - The user's ID
- * @param {string} artworkId - The artwork ID to favorite
+ * @param {string} artworkId - The artwork ID
  * @returns {Promise<Object>} Result with favorite record or error
  */
-export async function addFavorite(userId, artworkId) {
+async function addFavorite(userId, artworkId) {
   try {
     if (!userId || !artworkId) {
       return handleSupabaseError(new Error('User ID and Artwork ID are required'), 'validation');
@@ -644,12 +612,11 @@ export async function addFavorite(userId, artworkId) {
 
 /**
  * Remove artwork from favorites
- * 
  * @param {string} userId - The user's ID
- * @param {string} artworkId - The artwork ID to unfavorite
+ * @param {string} artworkId - The artwork ID
  * @returns {Promise<Object>} Result with success or error
  */
-export async function removeFavorite(userId, artworkId) {
+async function removeFavorite(userId, artworkId) {
   try {
     if (!userId || !artworkId) {
       return handleSupabaseError(new Error('User ID and Artwork ID are required'), 'validation');
@@ -675,11 +642,10 @@ export async function removeFavorite(userId, artworkId) {
 
 /**
  * Get user's favorites
- * 
  * @param {string} userId - The user's ID
  * @returns {Promise<Object>} Result with favorites array or error
  */
-export async function getUserFavorites(userId) {
+async function getUserFavorites(userId) {
   try {
     if (!userId) {
       return handleSupabaseError(new Error('User ID is required'), 'validation');
@@ -704,18 +670,16 @@ export async function getUserFavorites(userId) {
 }
 
 // ============================================
-// ARTWORK REQUEST OPERATIONS (Guests)
+// ARTWORK REQUEST OPERATIONS
 // ============================================
 
 /**
  * Submit artwork request (Guest feature)
- * Guests can submit requests for artwork they want to see
- * 
  * @param {string} requesterId - The guest's user ID
  * @param {Object} requestData - Request details
  * @returns {Promise<Object>} Result with request record or error
  */
-export async function submitArtworkRequest(requesterId, requestData) {
+async function submitArtworkRequest(requesterId, requestData) {
   try {
     if (!requesterId || !requestData || !requestData.title || !requestData.description) {
       return handleSupabaseError(new Error('Requester ID, title, and description are required'), 'validation');
@@ -746,12 +710,11 @@ export async function submitArtworkRequest(requesterId, requestData) {
 }
 
 /**
- * Get user's artwork requests (Guest feature)
- * 
+ * Get user's artwork requests
  * @param {string} requesterId - The guest's user ID
  * @returns {Promise<Object>} Result with requests array or error
  */
-export async function getUserRequests(requesterId) {
+async function getUserRequests(requesterId) {
   try {
     if (!requesterId) {
       return handleSupabaseError(new Error('Requester ID is required'), 'validation');
@@ -783,7 +746,7 @@ export async function getUserRequests(requesterId) {
  * Get current authenticated user
  * @returns {Promise<Object>} User object or null
  */
-export async function getCurrentUser() {
+async function getCurrentUser() {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     
@@ -806,7 +769,7 @@ export async function getCurrentUser() {
  * @param {string} password - User's password
  * @returns {Promise<Object>} Result with user or error
  */
-export async function signIn(email, password) {
+async function signIn(email, password) {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -829,7 +792,7 @@ export async function signIn(email, password) {
  * Sign out current user
  * @returns {Promise<Object>} Result with success or error
  */
-export async function signOut() {
+async function signOut() {
   try {
     const { error } = await supabase.auth.signOut();
     
@@ -850,7 +813,7 @@ export async function signOut() {
  * @param {Function} callback - Function to call on auth state change
  * @returns {Function} Unsubscribe function
  */
-export function subscribeToAuthState(callback) {
+function subscribeToAuthState(callback) {
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
     callback(event, session);
   });
@@ -859,39 +822,17 @@ export function subscribeToAuthState(callback) {
 }
 
 // ============================================
-// COMPLETE UPLOAD FLOW (Artist)
+// COMPLETE UPLOAD FLOW
 // ============================================
 
 /**
- * Complete artwork upload flow
- * This function combines file upload, metadata saving, and database record creation
- * 
+ * Complete artwork upload flow (upload + save to database)
  * @param {File} file - The artwork image file
  * @param {string} artistId - The artist's user ID
- * @param {Object} metadata - Artwork metadata (title, description, creationDate, tags)
- * @returns {Promise<Object>} Complete result with artwork data or error
- * 
- * Usage Example:
- * ```javascript
- * const result = await uploadCompleteArtwork(
- *   fileInput.files[0],
- *   userId,
- *   {
- *     title: 'Sunset over Mountains',
- *     description: 'An oil painting of mountains at sunset',
- *     creationDate: '2024-01-15',
- *     tags: ['landscape', 'mountains', 'sunset']
- *   }
- * );
- * 
- * if (result.success) {
- *   console.log('Artwork uploaded:', result.data);
- * } else {
- *   console.error('Upload failed:', result.error.message);
- * }
- * ```
+ * @param {Object} metadata - Artwork metadata
+ * @returns {Promise<Object>} Complete result
  */
-export async function uploadCompleteArtwork(file, artistId, metadata) {
+async function uploadCompleteArtwork(file, artistId, metadata) {
   try {
     // Step 1: Upload the image file
     const uploadResult = await uploadArtwork(file, artistId, metadata);
@@ -930,33 +871,39 @@ export async function uploadCompleteArtwork(file, artistId, metadata) {
   }
 }
 
-// Export all functions as default
-export default {
-  supabase,
-  uploadArtwork,
-  uploadProfilePicture,
-  uploadCompleteArtwork,
-  deleteFile,
-  saveArtwork,
-  fetchArtworkByArtist,
-  fetchPublicArtwork,
-  fetchArtworkById,
-  updateArtwork,
-  deleteArtwork,
-  addFavorite,
-  removeFavorite,
-  getUserFavorites,
-  submitArtworkRequest,
-  getUserRequests,
-  getCurrentUser,
-  signIn,
-  signOut,
-  subscribeToAuthState,
-  validateImageFile,
-  generateFilePath,
-  handleSupabaseError,
-  createSuccessResponse,
-  STORAGE_BUCKETS,
-  ALLOWED_IMAGE_TYPES,
-  FILE_SIZE_LIMITS
-};
+// ============================================
+// EXPORT TO WINDOW OBJECT
+// ============================================
+
+// Attach all functions to window for global access
+if (typeof window !== 'undefined') {
+  window.SupabaseClient = {
+    supabase,
+    uploadArtwork,
+    uploadProfilePicture,
+    uploadCompleteArtwork,
+    deleteFile,
+    saveArtwork,
+    fetchArtworkByArtist,
+    fetchPublicArtwork,
+    fetchArtworkById,
+    updateArtwork,
+    deleteArtwork,
+    addFavorite,
+    removeFavorite,
+    getUserFavorites,
+    submitArtworkRequest,
+    getUserRequests,
+    getCurrentUser,
+    signIn,
+    signOut,
+    subscribeToAuthState,
+    validateImageFile,
+    generateFilePath,
+    handleSupabaseError,
+    createSuccessResponse,
+    STORAGE_BUCKETS,
+    ALLOWED_IMAGE_TYPES,
+    FILE_SIZE_LIMITS
+  };
+}
